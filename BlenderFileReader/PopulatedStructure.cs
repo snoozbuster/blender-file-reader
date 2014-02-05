@@ -361,7 +361,7 @@ namespace BlenderFileReader
                     if(field.IsArray)
                         return "\'" + new string(field.GetValueAsCharArray()) + "\'" + getAlternateCharArray(field);
                     else
-                        return "\'" + field.GetValueAsChar() + "\' (" + Convert.ToSByte(field.GetValueAsChar()) + ")";
+                        return "\'" + field.GetValueAsChar() + "\' (0x" + Convert.ToSByte(field.GetValueAsChar()).ToString("X2") + ")";
                 case "uchar":
                     if(field.IsArray)
                         return printArray(field.GetValueAsUCharArray(), field.Length);
