@@ -471,10 +471,15 @@ namespace BlenderFileReader
             if(Size != Program.PointerSize || !IsPointer)
                 throw new InvalidOperationException("This field isn't a pointer.");
 
+            string hex;
             if(Program.PointerSize == 4)
-                return "0x" + BitConverter.ToUInt32(Value, index).ToString("X");
+                hex = "0x" + BitConverter.ToUInt32(Value, index).ToString("X" + (Program.PointerSize * 2));
             else
-                return "0x" + BitConverter.ToUInt64(Value, index).ToString("X");
+                hex = "0x" + BitConverter.ToUInt64(Value, index).ToString("X" + (Program.PointerSize * 2));
+
+            if(hex == "0x00000000" || hex == "0x0000000000000000")
+                return "0x0";
+            return hex;
         }
 
         /// <summary>
