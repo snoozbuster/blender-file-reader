@@ -45,8 +45,8 @@ namespace BlenderFileReader
             writeCSS();
             using(StreamWriter writer = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
             {
-                writer.WriteLine("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHMTL 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1-transitional.dtd\">");
-                writeStartTag(writer, "html", "xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\"");
+                writer.WriteLine("<!DOCTYPE html>");
+                writeStartTag(writer, "html", "lang=\"en\"");
                 writeHtmlHead(writer); // <head> ... </head>
                 writeBody(writer); // <body> ... </body>
                 writeEndTag(writer); // </html>

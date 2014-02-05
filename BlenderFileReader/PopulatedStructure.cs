@@ -594,7 +594,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a char[].");
 
             char[] data = new char[Length];
-            for(int i = 0; i < Length; i++)
+            for(int i = 0; i < (Length * Size); i++)
                 data[i] = Encoding.ASCII.GetChars(Value, i, 1)[0];
 
             return data;
@@ -634,8 +634,8 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a short[].");
 
             short[] data = new short[Length];
-            for(int i = 0; i < Length; i += 2)
-                data[i] = BitConverter.ToInt16(Value, i);
+            for(int i = 0; i < (Length * Size); i += Size)
+                data[i / Size] = BitConverter.ToInt16(Value, i);
 
             return data;
         }
@@ -656,7 +656,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a ushort[].");
 
             ushort[] data = new ushort[Length];
-            for(int i = 0; i < Length; i += 2)
+            for(int i = 0; i < (Length * Size); i += 2)
                 data[i] = BitConverter.ToUInt16(Value, i);
 
             return data;
@@ -678,8 +678,8 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a int[].");
 
             int[] data = new int[Length];
-            for(int i = 0; i < Length; i += 4)
-                data[i] = BitConverter.ToInt32(Value, i);
+            for(int i = 0; i < (Length * Size); i += Size)
+                data[i / Size] = BitConverter.ToInt32(Value, i);
 
             return data;
         }
@@ -700,7 +700,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a uint[].");
 
             uint[] data = new uint[Length];
-            for(int i = 0; i < Length; i += 4)
+            for(int i = 0; i < (Length * Size); i += 4)
                 data[i] = BitConverter.ToUInt32(Value, i);
 
             return data;
@@ -722,7 +722,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a int[].");
 
             long[] data = new long[Length];
-            for(int i = 0; i < Length; i += 8)
+            for(int i = 0; i < (Length * Size); i += 8)
                 data[i] = BitConverter.ToInt64(Value, i);
 
             return data;
@@ -744,7 +744,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a uint[].");
 
             ulong[] data = new ulong[Length];
-            for(int i = 0; i < Length; i += 8)
+            for(int i = 0; i < (Length * Size); i += 8)
                 data[i] = BitConverter.ToUInt64(Value, i);
 
             return data;
@@ -766,8 +766,8 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a float[].");
 
             float[] data = new float[Length];
-            for(int i = 0; i < Length; i += 4)
-                data[i] = BitConverter.ToSingle(Value, i);
+            for(int i = 0; i < (Length * Size); i += Size)
+                data[i / Size] = BitConverter.ToSingle(Value, i);
 
             return data;
         }
@@ -788,8 +788,8 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This field isn't a double[].");
 
             double[] data = new double[Length];
-            for(int i = 0; i < Length; i += 4)
-                data[i] = BitConverter.ToDouble(Value, i);
+            for(int i = 0; i < (Length * Size); i += Size)
+                data[i / Size] = BitConverter.ToDouble(Value, i);
 
             return data;
         }
