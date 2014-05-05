@@ -16,7 +16,7 @@ namespace BlenderFileReader
         private string friendly;
 
         private string versionNumber;
-        private List<PopulatedStructure> structures;
+        private List<PopulatedStructure[]> structures;
 
         private int tabDepth = 0;
         private string tabs { get { string s = ""; for(int i = 0; i < tabDepth; i++) s += "    "; return s; } }
@@ -38,7 +38,7 @@ namespace BlenderFileReader
         /// Writes information to HTML.
         /// </summary>
         /// <param name="structures">List of populated structures.</param>
-        public void WriteBlendFileToHtml(List<PopulatedStructure> structures, string versionNumber)
+        public void WriteBlendFileToHtml(List<PopulatedStructure[]> structures, string versionNumber)
         {
             this.versionNumber = versionNumber;
             this.structures = structures;
@@ -65,25 +65,49 @@ namespace BlenderFileReader
 
         private void writeBodyContent(StreamWriter writer)
         {
-            foreach(PopulatedStructure s in structures)
+            foreach(PopulatedStructure[] block in structures)
             {
-                bool odd = true;
-                int fieldNumber = 0;
-                writeStartTag(writer, "div", "id=\"" + s.Type + "\" class=\"structure\"");
-                writeTable(writer, new[] { "structure_head" }, 
-                    new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + s.ContainingBlock.OldMemoryAddress.ToString("X"),
-                    false, new[] { s.Type, s.Size.ToString(), s.FlattenedData.Count.ToString(), "0x" + s.ContainingBlock.OldMemoryAddress.ToString("X") });
-                //writer.WriteLine("<table border=\"1\" id=\"0x" + s.ContainingBlock.OldMemoryAddress.ToString("X") + "\" alt=\"0x" + s.ContainingBlock.OldMemoryAddress.ToString("X") + "\">");
-                //writer.WriteLine("</table>");
-
-                writeStartTag(writer, "table", "class=\"structure_body\"");
-                writeTableHead(writer, new[] { "Field No.", "Identifier", "Parent Object Type", "Field Type", "Field Size", "Field Value" });
-                foreach(FieldInfo field in s.FlattenedData)
+                int index = 0;
+                bool outer_odd = true;
+                writeStartTag(writer, "div", "class=\"structure " + block[0].Type + (block.Length > 1 ? " list" : "") + "\"");
+                writeTable(writer, new[] { "structure_head" },
+                    new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (Program.PointerSize * 2)),
+                    false, new[] { block[0].Type + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].FlattenedData.Count.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X") });
+                if(block.Length > 1)
                 {
-                    writeField(writer, field, odd, fieldNumber++);
-                    odd = !odd;
+                    writeStartTag(writer, "table", "class=\"structure_body\"");
+                    writeTableHead(writer, new[] { "Index", "Structure" });
                 }
-                writeEndTag(writer); // </table>
+                foreach(PopulatedStructure s in block)
+                {
+                    if(block.Length > 1)
+                    {
+                        writeStartTag(writer, "tr", "class=\"index " + (outer_odd ? "odd" : "even") + "\"");
+                        outer_odd = !outer_odd;
+                        writeStartTag(writer, "td", "class=\"first\"");
+                        writer.Write(index++);
+                        writeEndTag(writer); // </td>
+                        writeStartTag(writer, "td");
+                    }
+                    bool odd = true;
+                    int fieldNumber = 0;
+
+                    writeStartTag(writer, "table", "class=\"structure_body\"");
+                    writeTableHead(writer, new[] { "Field No.", "Identifier", "Parent Object Type", "Field Type", "Field Size", "Field Value" });
+                    foreach(FieldInfo field in s.FlattenedData)
+                    {
+                        writeField(writer, field, odd, fieldNumber++);
+                        odd = !odd;
+                    }
+                    writeEndTag(writer); // </table>
+                    if(block.Length > 1)
+                    {
+                        writeEndTag(writer); // </td>
+                        writeEndTag(writer); // </tr>
+                    }
+                }
+                if(block.Length > 1)
+                    writeEndTag(writer); // </table>
                 writeEndTag(writer); // </div>
             }
             writeWarnings(writer);
@@ -200,9 +224,9 @@ namespace BlenderFileReader
             writeTableRow(null, writer, row);
         }
 
-        private void writeTableRow(string id, StreamWriter writer, params string[] row)
+        private void writeTableRow(string htmlClass, StreamWriter writer, params string[] row)
         {
-            string data = id != null ? "id=\"" + id + "\"" : "";
+            string data = htmlClass != null ? "class=\"" + htmlClass + "\"" : "";
             writeStartTag(writer, "tr", data);
             for(int i = 0; i < row.Length; i++)
                 writeLine(writer, "<td>" + row[i] + "</td>");
@@ -282,14 +306,25 @@ thead
 	background-color:rgb(230,170,170);
 }
 
-tr#even
+tr.even
 {
 	background-color:rgb(190,190,190);
 }
 
-tr#odd
+tr.odd
 {
 	background-color:rgb(170,170,230);
+}
+
+tr.index .first
+{
+    text-align: center;
+}
+
+tr.index td table
+{
+    margin: 0;
+    border: none;
 }
 
 div#container

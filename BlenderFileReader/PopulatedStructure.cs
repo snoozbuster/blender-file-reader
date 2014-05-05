@@ -359,9 +359,12 @@ namespace BlenderFileReader
             {
                 case "char":
                     if(field.IsArray)
-                        return "\'" + new string(field.GetValueAsCharArray()) + "\'" + getAlternateCharArray(field);
+                        return "\'" + new string(field.GetValueAsCharArray()).Split('\0')[0] + "\'" + getAlternateCharArray(field);
                     else
-                        return "\'" + field.GetValueAsChar() + "\' (0x" + Convert.ToSByte(field.GetValueAsChar()).ToString("X2") + ")";
+                    {
+                        char output = field.GetValueAsChar();
+                        return "\'" + (Convert.ToSByte(output) < 32 ? "" : output.ToString()) + "\' (0x" + Convert.ToSByte(output).ToString("X2") + ")";
+                    }
                 case "uchar":
                     if(field.IsArray)
                         return printArray(field.GetValueAsUCharArray(), field.Length);

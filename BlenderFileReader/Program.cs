@@ -38,7 +38,7 @@ namespace BlenderFileReader
             readBlocks(verbose, fileReader, versionNumber);
 
             // create PopulatedStructures
-            List<PopulatedStructure> structures = createStructures(verbose);
+            List<PopulatedStructure[]> structures = createStructures(verbose);
 
             // write html file
             writeFile(path, verbose, versionNumber, structures);
@@ -123,17 +123,17 @@ namespace BlenderFileReader
             }
         }
 
-        private static List<PopulatedStructure> createStructures(bool verbose)
+        private static List<PopulatedStructure[]> createStructures(bool verbose)
         {
             if(verbose)
                 Console.WriteLine("Attaching data in file blocks to structure templates...");
             List<FileBlock> blocks = FileBlock.GetBlockList();
-            List<PopulatedStructure> structures = new List<PopulatedStructure>();
+            List<PopulatedStructure[]> structures = new List<PopulatedStructure[]>();
             foreach(FileBlock b in blocks)
             {
                 PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b);
                 if(temp[0] != null)
-                    structures.AddRange(temp);
+                    structures.Add(temp);
             }
 
             if(PopulatedStructure.WarningMessages.Count > 0)
@@ -146,7 +146,7 @@ namespace BlenderFileReader
             return structures;
         }
 
-        private static void writeFile(string path, bool verbose, string versionNumber, List<PopulatedStructure> structures)
+        private static void writeFile(string path, bool verbose, string versionNumber, List<PopulatedStructure[]> structures)
         {
             if(verbose)
                 Console.WriteLine("Writing to file " + path.Substring(path.LastIndexOf('\\') + 1, path.LastIndexOf('.') - path.LastIndexOf('\\') - 1) + ".html" + "...");
