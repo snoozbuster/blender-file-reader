@@ -14,10 +14,10 @@ namespace BlenderFileReader
         private static int blocksParsed = 0;
 
         /// <summary>
-        /// A list of warning messages (just data). In the format
-        /// "block_number block_code block_index bytes_given bytes_expected"
+        /// A list of pieces of information about raw data blocks (blocks that are just data). In the format
+        /// "block_number block_address block_code block_index bytes_given bytes_expected"
         /// </summary>
-        public static List<string> WarningMessages = new List<string>();
+        public static List<string> RawBlockMessages = new List<string>();
         
         /// <summary>
         /// Parses a file block. If the file block is SDNA or another block with block.count == 0, it will return null.
@@ -26,14 +26,16 @@ namespace BlenderFileReader
         /// <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
         public static PopulatedStructure[] ParseFileBlock(FileBlock block)
         {
-            blocksParsed++; // before returns because blocks with no data are still advanced past.
+            blocksParsed++;
 
             if(block.Count == 0 || block.Code == "DNA1")
                 return new PopulatedStructure[] { null };
 
             if(block.Data.Length != StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count)
             {
-                WarningMessages.Add(blocksParsed + " " + block.Code + " " + block.SDNAIndex + " " + StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
+                // generally, these are things like raw data; packed files, preview images, and the target of pointers to primitives.
+                // other than TEST and REND, I have no idea what those blocks do.
+                RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (Program.PointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
                 return new PopulatedStructure[] { null };
             }
 

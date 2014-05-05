@@ -110,17 +110,19 @@ namespace BlenderFileReader
                     writeEndTag(writer); // </table>
                 writeEndTag(writer); // </div>
             }
-            writeWarnings(writer);
+            writeRawDataInfo(writer);
         }
 
-        private void writeWarnings(StreamWriter writer)
+        private void writeRawDataInfo(StreamWriter writer)
         {
-            writeStartTag(writer, "div", "id=\"warnings\"");
-            string[][] rows = new string[PopulatedStructure.WarningMessages.Count][];
-            for(int i = 0; i < PopulatedStructure.WarningMessages.Count; i++)
-                rows[i] = PopulatedStructure.WarningMessages[i].Split(' ');
-            writeTable(writer, new[] { "Warnings:" });
-            writeTable(writer, null, new[] { "Block number:", "Block code:", "Block index:", "Bytes expected:", "Bytes given:" }, "warnings_body", true, rows);
+            writeStartTag(writer, "div", "id=\"raw_blocks\"");
+            string[][] rows = new string[PopulatedStructure.RawBlockMessages.Count][];
+            for(int i = 0; i < PopulatedStructure.RawBlockMessages.Count; i++)
+                rows[i] = PopulatedStructure.RawBlockMessages[i].Split(' ');
+            for(int i = 0; i < rows.Length; i++)
+                rows[i][1] = "<a id=\"0x" + rows[i][1] + "\">0x" + rows[i][1] + "</a>";
+            writeTable(writer, new[] { "Raw Data Blocks:" });
+            writeTable(writer, null, new[] { "Block number:", "Block Address:", "Block code:", "Block index:", "Bytes expected:", "Bytes given:" }, "raw_blocks_body", true, rows);
             writeEndTag(writer);
         }
 
@@ -157,11 +159,12 @@ namespace BlenderFileReader
             }
 
             string typeName = field.TypeName + (field.IsArray ? (field.IsMultidimensional ? "[]" : "") + "[]" : "");
-            if(!field.IsArray && field.IsPointer && field.TypeName == "void" && field.GetValueAsPointer() != "0x0")
+            if(!field.IsArray && field.IsPointer && field.Type != typeof(FieldInfo) && field.GetValueAsPointer() != "0x0")
             {
                 FileBlock associatedBlock = FileBlock.GetBlockByAddress(Program.PointerSize == 4 ? field.GetValueAsUInt() : field.GetValueAsULong());
                 if(associatedBlock != null)
-                    typeName += " (points to " + StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName + ")";
+                    typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
+                        StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";
             }
 
             writeTableRow(odd ? "odd" : "even", writer, fieldNumber.ToString(), field.Name, field.ParentType, typeName, field.Length > 1 ? field.Size + " * " + field.Length + " (" + (field.Size * field.Length) + ")" : (field.Size * field.Length).ToString(), fieldVal);
@@ -169,8 +172,8 @@ namespace BlenderFileReader
 
         private void writeBodyHead(StreamWriter writer)
         {
-            writeTable(writer, null, new[] { "Version Number", "File Blocks", "Structures", "Types", "Names", "<a href=\"#warnings\">Warnings</a>" }, "blender_header", 
-                               false, new[] { versionNumber, FileBlock.GetBlockList().Count.ToString(), StructureDNA.StructureList.Count.ToString(), StructureDNA.TypeList.Count.ToString(), StructureDNA.NameList.Count.ToString(), PopulatedStructure.WarningMessages.Count.ToString() });
+            writeTable(writer, null, new[] { "Version Number", "File Blocks", "Structures", "Types", "Names", "<a href=\"#raw_blocks\">Raw Data Blocks</a>" }, "blender_header", 
+                               false, new[] { versionNumber, FileBlock.GetBlockList().Count.ToString(), StructureDNA.StructureList.Count.ToString(), StructureDNA.TypeList.Count.ToString(), StructureDNA.NameList.Count.ToString(), PopulatedStructure.RawBlockMessages.Count.ToString() });
         }
 
         private void writeTable(StreamWriter writer, string[] titles, params string[][] rows)

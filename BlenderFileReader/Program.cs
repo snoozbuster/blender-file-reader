@@ -136,8 +136,8 @@ namespace BlenderFileReader
                     structures.Add(temp);
             }
 
-            if(PopulatedStructure.WarningMessages.Count > 0)
-                Console.WriteLine(PopulatedStructure.WarningMessages.Count + " warnings encountered, more information will be written to file.");
+            if(PopulatedStructure.RawBlockMessages.Count > 0)
+                Console.WriteLine(PopulatedStructure.RawBlockMessages.Count + " warnings encountered, more information will be written to file.");
             if(verbose)
             {
                 Console.WriteLine("Structure construction complete. Press Enter to continue...");
