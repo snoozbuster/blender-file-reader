@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderFileReader", "Blende
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HTMLRendererDriver", "HTMLRendererDriver\HTMLRendererDriver.csproj", "{BDD59132-86B1-4E86-80C8-9A2A6238B34B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNADriver", "XNADriver\XNADriver\XNADriver.csproj", "{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -19,6 +21,10 @@ Global
 		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Debug|x86.Build.0 = Debug|x86
 		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Release|x86.ActiveCfg = Release|x86
 		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Release|x86.Build.0 = Release|x86
+		{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}.Debug|x86.ActiveCfg = Debug|x86
+		{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}.Debug|x86.Build.0 = Debug|x86
+		{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}.Release|x86.ActiveCfg = Release|x86
+		{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
