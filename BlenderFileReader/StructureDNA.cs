@@ -10,45 +10,31 @@ namespace BlenderFileReader
     /// <summary>
     /// Represents the file's StructureDNA.
     /// </summary>
-    public static class StructureDNA
+    public class StructureDNA : FileBlock
     {
-        private static bool created = false;
-
-        /// <summary>
-        /// Initializes the Structure DNA with the data from the DNA1 fileblock.
-        /// </summary>
-        /// <param name="data"></param>
-        public static void Create(byte[] data)
-        {
-            if(created)
-                throw new InvalidOperationException("Can't have more than one SDNA.");
-            created = true;
-
-            parseData(data);
-        }
-
         /// <summary>
         /// List of all the names contained in SDNA.
         /// </summary>
-        public static List<string> NameList { get; private set; }
+        public List<string> NameList { get; private set; }
         /// <summary>
         /// List of all the types and their sizes contained in SDNA.
         /// </summary>
-        public static List<BlenderType> TypeList { get; private set; }
+        public List<BlenderType> TypeList { get; private set; }
         /// <summary>
         /// List of all the names of the types in SDNA; used primarily for BlenderType and BlenderField's constructors.
         /// </summary>
-        public static List<string> TypeNameList { get; private set; }
+        public List<string> TypeNameList { get; private set; }
         /// <summary>
         /// List of all structures defined in SDNA.
         /// </summary>
-        public static List<SDNAStructure> StructureList { get; private set; }
+        public List<SDNAStructure> StructureList { get; private set; }
         /// <summary>
         /// List of all of the structures' types by index in TypeList/TypeNameList; used primarily for BlenderType and BlenderField's constructors.
         /// </summary>
-        public static List<short> StructureTypeIndices { get; private set; }
-        
-        private static void parseData(byte[] Data)
+        public List<short> StructureTypeIndices { get; private set; }
+
+        public StructureDNA(string code, int size, int sdna, int count, byte[] data)
+            : base(code, size, sdna, count, data)
         {
             int position = 0;
             position += 4; // "read" 'SDNA'
@@ -152,7 +138,7 @@ namespace BlenderFileReader
 
             TypeList = new List<BlenderType>();
             for(int i = 0; i < numberOfTypes; i++)
-                TypeList.Add(new BlenderType(TypeNameList[i], typeLengthList[i]));
+                TypeList.Add(new BlenderType(TypeNameList[i], typeLengthList[i], this));
 
             StructureList = new List<SDNAStructure>(numberOfStructures);
             for(int i = 0; i < numberOfStructures; i++)
@@ -161,9 +147,9 @@ namespace BlenderFileReader
                 for(int j = 0; j < structureFields[i].Count; j++)
                 {
                     KeyValuePair<short, short> element = structureFields[i].ElementAt(j);
-                    fields.Add(new BlenderField(element.Key, element.Value));
+                    fields.Add(new BlenderField(element.Key, element.Value, this));
                 }
-                StructureList.Add(new SDNAStructure(StructureTypeIndices[i], fields));
+                StructureList.Add(new SDNAStructure(StructureTypeIndices[i], fields, this));
             }
 
             foreach(SDNAStructure s in StructureList)

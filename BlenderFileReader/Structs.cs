@@ -13,11 +13,12 @@ namespace BlenderFileReader
     {
         private List<BlenderField> fieldDictionary;
         private short structureIndexType;
+        private StructureDNA sdna;
 
         /// <summary>
         /// Type (as defined by SDNA) of the structure.
         /// </summary>
-        public BlenderType StructureType { get { return StructureDNA.TypeList[structureIndexType]; } }
+        public BlenderType StructureType { get { return sdna.TypeList[structureIndexType]; } }
         /// <summary>
         /// Name of the structure's type (shortcut to StructureType.Name).
         /// </summary>
@@ -38,11 +39,12 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="structureType">Index in SDNA.TypeList of the structure type.</param>
         /// <param name="fieldDict">List of fields in the structure.</param>
-        public SDNAStructure(short structureType, List<BlenderField> fieldDict)
+        public SDNAStructure(short structureType, List<BlenderField> fieldDict, StructureDNA sdna)
         {
             fieldDictionary = fieldDict;
             structureIndexType = structureType;
             isInitialized = false;
+            this.sdna = sdna;
 
             if(StructureType.IsPrimitive)
                 throw new ArgumentException("Type of structure is a primitive.");
@@ -86,13 +88,13 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="name">Name of the type.</param>
         /// <param name="size">Size of the type in bytes.</param>
-        public BlenderType(string name, short size)
+        public BlenderType(string name, short size, StructureDNA s)
         {
             Name = name;
             Size = size;
 
-            int index = StructureDNA.TypeNameList.IndexOf(name);
-            IsPrimitive = StructureDNA.StructureTypeIndices.IndexOf((short)index) == -1; // not found means primitive
+            int index = s.TypeNameList.IndexOf(name);
+            IsPrimitive = s.StructureTypeIndices.IndexOf((short)index) == -1; // not found means primitive
         }
     }
 
@@ -129,17 +131,20 @@ namespace BlenderFileReader
         private SDNAStructure? structure;
         private bool isInitialized;
 
+        private StructureDNA sdna;
+
         /// <summary>
         /// Creates a new field.
         /// </summary>
         /// <param name="name">Name of the field.</param>
         /// <param name="type">Type (as defined by SDNA) of the field.</param>
-        public BlenderField(string name, BlenderType type)
+        public BlenderField(string name, BlenderType type, StructureDNA sdna)
         {
             Name = name;
             Type = type;
             structure = null;
             isInitialized = false;
+            this.sdna = sdna;
         }
 
         /// <summary>
@@ -147,10 +152,11 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="nameIndex">Index of SDNA.NameList containing the name of the field.</param>
         /// <param name="typeIndex">Index of SDNA.TypeList containing the type of the field.</param>
-        public BlenderField(short nameIndex, short typeIndex)
+        public BlenderField(short nameIndex, short typeIndex, StructureDNA sdna)
         {
-            Name = StructureDNA.NameList[nameIndex];
-            Type = StructureDNA.TypeList[typeIndex];
+            Name = sdna.NameList[nameIndex];
+            Type = sdna.TypeList[typeIndex];
+            this.sdna = sdna;
 
             if(Type.Name.Count(v => { return v == '['; }) > 2)
                 throw new Exception("A 3D array is present and this program is not set up to handle that.");
@@ -171,7 +177,7 @@ namespace BlenderFileReader
             isInitialized = true;
 
             string name = Type.Name; // can't use 'this'
-            structure = StructureDNA.StructureList.Find(v => { return v.StructureTypeName == name; });
+            structure = sdna.StructureList.Find(v => { return v.StructureTypeName == name; });
             structure.Value.InitializeFields();
         }
     }

@@ -27,6 +27,11 @@ namespace BlenderFileReader
         /// </summary>
         public List<PopulatedStructure[]> Structures { get; private set; }
 
+        /// <summary>
+        /// A reference to the parsed structure DNA for this file.
+        /// </summary>
+        public StructureDNA StructureDNA { get; private set; }
+
         private List<FileBlock> fileBlocks = new List<FileBlock>();
 
         public BlenderFile(string path, bool verbose = false)
@@ -43,8 +48,8 @@ namespace BlenderFileReader
 
             VersionNumber = versionNumber;
 
-            // file header read; at first file block
-            readBlocks(verbose, reader);
+            // file header read; at first file block. readBlocks returns the StructureDNA.
+            StructureDNA = readBlocks(verbose, reader);
 
             // create PopulatedStructures
             Structures = createStructures(verbose);
@@ -70,12 +75,19 @@ namespace BlenderFileReader
             return false;
         }
 
-        private void readBlocks(bool verbose, BinaryReader fileReader)
+        private StructureDNA readBlocks(bool verbose, BinaryReader fileReader)
         {
+            StructureDNA dna = null;
             do
             {
-                fileBlocks.Add(FileBlock.ReadBlock(fileReader, PointerSize));
+                FileBlock b = FileBlock.ReadBlock(fileReader, PointerSize);
+                if(b.Code == "DNA1")
+                    dna = (StructureDNA)b;
+                fileBlocks.Add(b);
             } while(fileReader.BaseStream.Position < fileReader.BaseStream.Length);
+
+            if(dna == null)
+                throw new InvalidDataException("This file contains no structure DNA! What are you trying to pull?!");
 
             if(verbose)
             {
@@ -88,6 +100,8 @@ namespace BlenderFileReader
                 Console.WriteLine("Press Enter to continue...");
                 Console.ReadLine();
             }
+
+            return dna;
         }
 
         private List<PopulatedStructure[]> createStructures(bool verbose)
@@ -97,7 +111,7 @@ namespace BlenderFileReader
             List<PopulatedStructure[]> structures = new List<PopulatedStructure[]>();
             foreach(FileBlock b in fileBlocks)
             {
-                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, PointerSize);
+                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize);
                 if(temp[0] != null)
                     structures.Add(temp);
             }

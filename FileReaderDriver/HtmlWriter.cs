@@ -161,8 +161,8 @@ namespace FileReaderDriver
             {
                 FileBlock associatedBlock = parsedFile.GetBlockByAddress(parsedFile.PointerSize == 4 ? field.GetValueAsUInt() : field.GetValueAsULong());
                 if(associatedBlock != null)
-                    typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
-                        StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";
+                    typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
+                        parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";
             }
 
             writeTableRow(odd ? "odd" : "even", writer, fieldNumber.ToString(), field.Name, field.ParentType, typeName, field.Length > 1 ? field.Size + " * " + field.Length + " (" + (field.Size * field.Length) + ")" : (field.Size * field.Length).ToString(), fieldVal);
@@ -171,7 +171,7 @@ namespace FileReaderDriver
         private void writeBodyHead(StreamWriter writer)
         {
             writeTable(writer, null, new[] { "Version Number", "File Blocks", "Structures", "Types", "Names", "<a href=\"#raw_blocks\">Raw Data Blocks</a>" }, "blender_header",
-                               false, new[] { parsedFile.VersionNumber, parsedFile.GetBlockList().Count.ToString(), StructureDNA.StructureList.Count.ToString(), StructureDNA.TypeList.Count.ToString(), StructureDNA.NameList.Count.ToString(), PopulatedStructure.RawBlockMessages.Count.ToString() });
+                               false, new[] { parsedFile.VersionNumber, parsedFile.GetBlockList().Count.ToString(), parsedFile.StructureDNA.StructureList.Count.ToString(), parsedFile.StructureDNA.TypeList.Count.ToString(), parsedFile.StructureDNA.NameList.Count.ToString(), PopulatedStructure.RawBlockMessages.Count.ToString() });
         }
 
         private void writeTable(StreamWriter writer, string[] titles, params string[][] rows)

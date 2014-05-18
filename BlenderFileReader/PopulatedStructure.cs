@@ -24,18 +24,18 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="block">The block to parse.</param>
         /// <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
-        public static PopulatedStructure[] ParseFileBlock(FileBlock block, int pointerSize)
+        public static PopulatedStructure[] ParseFileBlock(FileBlock block, StructureDNA sdna, int pointerSize)
         {
             blocksParsed++;
 
             if(block.Count == 0 || block.Code == "DNA1")
                 return new PopulatedStructure[] { null };
 
-            if(block.Data.Length != StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count)
+            if(block.Data.Length != sdna.StructureList[block.SDNAIndex].StructureTypeSize * block.Count)
             {
                 // generally, these are things like raw data; packed files, preview images, and the target of pointers to primitives.
                 // I have no idea what TEST and REND do.
-                RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (pointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
+                RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (pointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + sdna.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
                 return new PopulatedStructure[] { null };
             }
 
@@ -47,16 +47,16 @@ namespace BlenderFileReader
                     byte[] data = new byte[block.Size / block.Count];
                     for(int j = 0; j < block.Size / block.Count; j++)
                         data[j] = block.Data[i * (block.Size / block.Count) + j];
-                    output[i] = new PopulatedStructure(data, StructureDNA.StructureList[block.SDNAIndex], pointerSize);
-                    output[i].Size = StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize;
-                    output[i].Type = StructureDNA.StructureList[block.SDNAIndex].StructureTypeName;
+                    output[i] = new PopulatedStructure(data, sdna.StructureList[block.SDNAIndex], pointerSize);
+                    output[i].Size = sdna.StructureList[block.SDNAIndex].StructureTypeSize;
+                    output[i].Type = sdna.StructureList[block.SDNAIndex].StructureTypeName;
                     output[i].ContainingBlock = block;
                 }
             else
             {
-                output[0] = new PopulatedStructure(block.Data, StructureDNA.StructureList[block.SDNAIndex], pointerSize);
-                output[0].Size = StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize;
-                output[0].Type = StructureDNA.StructureList[block.SDNAIndex].StructureTypeName;
+                output[0] = new PopulatedStructure(block.Data, sdna.StructureList[block.SDNAIndex], pointerSize);
+                output[0].Size = sdna.StructureList[block.SDNAIndex].StructureTypeSize;
+                output[0].Type = sdna.StructureList[block.SDNAIndex].StructureTypeName;
                 output[0].ContainingBlock = block;
             }
 

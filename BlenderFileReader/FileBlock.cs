@@ -65,10 +65,7 @@ namespace BlenderFileReader
             FileBlock block;
 
             if(code == "DNA1") // then this block is StructureDNA
-            {
-                StructureDNA.Create(data);
-                block = new FileBlock(code, size, sdna, count, data);
-            }
+                block = new StructureDNA(code, size, sdna, count, data);
             else
                 block = new FileBlock(code, size, sdna, count, data);
 
