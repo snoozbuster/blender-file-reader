@@ -34,28 +34,26 @@ namespace BlenderFileReader
 
         private List<FileBlock> fileBlocks = new List<FileBlock>();
 
-        public BlenderFile(string path, bool verbose = false)
-            : this(new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read)), verbose)
+        public BlenderFile(string path)
+            : this(new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read)))
         { }
 
-        public BlenderFile(BinaryReader reader, bool verbose = false)
+        public BlenderFile(BinaryReader reader)
         {
             string versionNumber;
 
-            // readHeader returns true if endianness check fails
-            if(readHeader(reader, out versionNumber))
-                return;
+            readHeader(reader, out versionNumber);
 
             VersionNumber = versionNumber;
 
             // file header read; at first file block. readBlocks returns the StructureDNA.
-            StructureDNA = readBlocks(verbose, reader);
+            StructureDNA = readBlocks(reader);
 
             // create PopulatedStructures
-            Structures = createStructures(verbose);
+            Structures = createStructures();
         }
 
-        private bool readHeader(BinaryReader fileReader, out string versionNumber)
+        private void readHeader(BinaryReader fileReader, out string versionNumber)
         {
             versionNumber = null;
             fileReader.ReadBytes(7); // read out 'BLENDER'
@@ -64,18 +62,13 @@ namespace BlenderFileReader
 
             if((endianness == 'v' && !BitConverter.IsLittleEndian) || (endianness == 'V' && BitConverter.IsLittleEndian)
                 || (endianness != 'v' && endianness != 'V'))
-            {
-                Console.WriteLine("Endianness of computer does not appear to match endianness of file. Open the file in Blender and save it to convert.");
-                Console.Read();
-                return true;
-            }
+                throw new InvalidDataException("Endianness of computer does not appear to match endianness of file. Open the file in Blender and save it to convert.");
 
             versionNumber = new string(new[] { Convert.ToChar(fileReader.ReadByte()), '.', Convert.ToChar(fileReader.ReadByte()),
                 Convert.ToChar(fileReader.ReadByte()) });
-            return false;
         }
 
-        private StructureDNA readBlocks(bool verbose, BinaryReader fileReader)
+        private StructureDNA readBlocks(BinaryReader fileReader)
         {
             StructureDNA dna = null;
             do
@@ -89,25 +82,11 @@ namespace BlenderFileReader
             if(dna == null)
                 throw new InvalidDataException("This file contains no structure DNA! What are you trying to pull?!");
 
-            if(verbose)
-            {
-                Console.WriteLine("Read successful. Information:");
-                Console.WriteLine("Blender version number: " + VersionNumber);
-                Console.WriteLine("Number of file blocks (including SDNA and ENDB): " + fileBlocks.Count);
-                Console.WriteLine("Number of structures in SDNA: " + StructureDNA.StructureList.Count);
-                Console.WriteLine("Number of types defined in SDNA: " + StructureDNA.TypeList.Count);
-                Console.WriteLine("Number of names defined in SDNA: " + StructureDNA.NameList.Count);
-                Console.WriteLine("Press Enter to continue...");
-                Console.ReadLine();
-            }
-
             return dna;
         }
 
-        private List<PopulatedStructure[]> createStructures(bool verbose)
+        private List<PopulatedStructure[]> createStructures()
         {
-            if(verbose)
-                Console.WriteLine("Attaching data in file blocks to structure templates...");
             List<PopulatedStructure[]> structures = new List<PopulatedStructure[]>();
             foreach(FileBlock b in fileBlocks)
             {
@@ -118,11 +97,7 @@ namespace BlenderFileReader
 
             if(PopulatedStructure.RawBlockMessages.Count > 0)
                 Console.WriteLine(PopulatedStructure.RawBlockMessages.Count + " warnings encountered, more information will be written to file.");
-            if(verbose)
-            {
-                Console.WriteLine("Structure construction complete. Press Enter to continue...");
-                Console.ReadLine();
-            }
+
             return structures;
         }
 
