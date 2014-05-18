@@ -20,6 +20,15 @@ namespace XNADriver
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
+        BasicEffect effect;
+        VertexBuffer buffer = null;
+        VertexPositionColor[] vertices = null;
+
+        VertexBuffer axisBuff;
+        VertexPositionColor[] axisVerts = null;
+
+        Camera camera;
+
         public BaseGame()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -48,7 +57,19 @@ namespace XNADriver
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            camera = new Camera(MathHelper.ToRadians(70), GraphicsDevice.Viewport.AspectRatio, 1, 1000);
+            effect = new BasicEffect(GraphicsDevice);
+            effect.TextureEnabled = false;
+            effect.VertexColorEnabled = true;
+
+            axisVerts = new VertexPositionColor[6];
+            axisVerts[0] = new VertexPositionColor(new Vector3(0, 0, 0), Color.Red);
+            axisVerts[1] = new VertexPositionColor(new Vector3(10000, 0, 0), Color.Red);
+            axisVerts[2] = new VertexPositionColor(new Vector3(0, 0, 0), Color.Green);
+            axisVerts[3] = new VertexPositionColor(new Vector3(0, 10000, 0), Color.Green);
+            axisVerts[4] = new VertexPositionColor(new Vector3(0, 0, 0), Color.Blue);
+            axisVerts[5] = new VertexPositionColor(new Vector3(0, 0, 10000), Color.Blue);
+            axisBuff = new VertexBuffer(GraphicsDevice, VertexPositionColor.VertexDeclaration, axisVerts.Length, BufferUsage.None);
         }
 
         /// <summary>
@@ -71,7 +92,7 @@ namespace XNADriver
             if(GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            // TODO: Add your update logic here
+            camera.Update(gameTime);
 
             base.Update(gameTime);
         }
@@ -84,9 +105,37 @@ namespace XNADriver
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            drawAxes();
+
+            effect.View = camera.View;
+            effect.Projection = camera.Projection;
+            effect.World = camera.World;
+            if(buffer != null)
+            {
+                GraphicsDevice.SetVertexBuffer(buffer);
+                foreach(EffectPass pass in effect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertices.Length / 3);
+                }
+            }
 
             base.Draw(gameTime);
+        }
+
+        private void drawAxes()
+        {
+            GraphicsDevice.SetVertexBuffer(axisBuff);
+            effect.World = camera.World;
+            effect.View = camera.View;
+            effect.Projection = camera.Projection;
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            foreach(EffectPass pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                GraphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList, axisVerts, 0, 3);
+            }
         }
     }
 }

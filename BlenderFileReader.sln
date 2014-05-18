@@ -5,7 +5,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderFileReader", "Blende
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HTMLRendererDriver", "HTMLRendererDriver\HTMLRendererDriver.csproj", "{BDD59132-86B1-4E86-80C8-9A2A6238B34B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNADriver", "XNADriver\XNADriver\XNADriver.csproj", "{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNADriver", "XNADriver\XNADriver.csproj", "{405CC730-5D68-4BD3-8AE5-58C0D6E3EB3E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
