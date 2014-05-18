@@ -9,13 +9,15 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using BlenderFileReader;
+using FileDialog = System.Windows.Forms.OpenFileDialog;
+using DialogResult = System.Windows.Forms.DialogResult;
 
 namespace XNADriver
 {
     /// <summary>
     /// This is the main type for your game
     /// </summary>
-    public class BaseGame : Microsoft.Xna.Framework.Game
+    public class BaseGame : Game
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
@@ -28,6 +30,8 @@ namespace XNADriver
         VertexPositionColor[] axisVerts = null;
 
         Camera camera;
+
+        KeyboardState keyboardLastFrame;
 
         public BaseGame()
         {
@@ -43,7 +47,7 @@ namespace XNADriver
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            keyboardLastFrame = Keyboard.GetState();
 
             base.Initialize();
         }
@@ -76,10 +80,7 @@ namespace XNADriver
         /// UnloadContent will be called once per game and is the place to unload
         /// all content.
         /// </summary>
-        protected override void UnloadContent()
-        {
-            // TODO: Unload any non ContentManager content here
-        }
+        protected override void UnloadContent() { }
 
         /// <summary>
         /// Allows the game to run logic such as updating the world,
@@ -88,13 +89,19 @@ namespace XNADriver
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            // Allows the game to exit
-            if(GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-                this.Exit();
+            KeyboardState keyboard = Keyboard.GetState();
+
+            if(keyboard.IsKeyDown(Keys.Escape))
+                Exit();
 
             camera.Update(gameTime);
 
+            if(keyboard.IsKeyUp(Keys.O) && keyboardLastFrame.IsKeyDown(Keys.O))
+                loadFile();
+
             base.Update(gameTime);
+
+            keyboardLastFrame = keyboard;
         }
 
         /// <summary>
@@ -107,6 +114,31 @@ namespace XNADriver
 
             drawAxes();
 
+            drawModel();
+
+            base.Draw(gameTime);
+        }
+
+        private void loadFile()
+        {
+            FileDialog f = new FileDialog();
+            f.Multiselect = false;
+            f.Filter = "Blender files (*.blend)|*.blend";
+            f.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if(f.ShowDialog() == DialogResult.OK)
+            {
+                BlenderFile file = new BlenderFile(f.FileName);
+                loadModelData(file);
+            }
+        }
+
+        private void loadModelData(BlenderFile file)
+        {
+
+        }
+
+        private void drawModel()
+        {
             effect.View = camera.View;
             effect.Projection = camera.Projection;
             effect.World = camera.World;
@@ -119,8 +151,6 @@ namespace XNADriver
                     GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertices.Length / 3);
                 }
             }
-
-            base.Draw(gameTime);
         }
 
         private void drawAxes()
