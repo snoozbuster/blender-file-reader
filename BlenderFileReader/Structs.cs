@@ -9,7 +9,7 @@ namespace BlenderFileReader
     /// <summary>
     /// Represents a structure as defined by SDNA. 
     /// </summary>
-    struct SDNAStructure
+    public struct SDNAStructure
     {
         private List<BlenderField> fieldDictionary;
         private short structureIndexType;
@@ -66,7 +66,7 @@ namespace BlenderFileReader
     /// <summary>
     /// A type as defined by SDNA.
     /// </summary>
-    struct BlenderType
+    public struct BlenderType
     {
         /// <summary>
         /// Name of the type.
@@ -99,7 +99,7 @@ namespace BlenderFileReader
     /// <summary>
     /// A field of a structure as defined by SDNA.
     /// </summary>
-    struct BlenderField
+    public struct BlenderField
     {
         /// <summary>
         /// Name of the field.

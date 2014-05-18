@@ -9,7 +9,7 @@ namespace BlenderFileReader
     /// <summary>
     /// Represents a SDNA structure filled with data.
     /// </summary>
-    class PopulatedStructure
+    public class PopulatedStructure
     {
         private static int blocksParsed = 0;
 
@@ -24,7 +24,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="block">The block to parse.</param>
         /// <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
-        public static PopulatedStructure[] ParseFileBlock(FileBlock block)
+        public static PopulatedStructure[] ParseFileBlock(FileBlock block, int pointerSize)
         {
             blocksParsed++;
 
@@ -34,8 +34,8 @@ namespace BlenderFileReader
             if(block.Data.Length != StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count)
             {
                 // generally, these are things like raw data; packed files, preview images, and the target of pointers to primitives.
-                // other than TEST and REND, I have no idea what those blocks do.
-                RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (Program.PointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
+                // I have no idea what TEST and REND do.
+                RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (pointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
                 return new PopulatedStructure[] { null };
             }
 
@@ -47,14 +47,14 @@ namespace BlenderFileReader
                     byte[] data = new byte[block.Size / block.Count];
                     for(int j = 0; j < block.Size / block.Count; j++)
                         data[j] = block.Data[i * (block.Size / block.Count) + j];
-                    output[i] = new PopulatedStructure(data, StructureDNA.StructureList[block.SDNAIndex]);
+                    output[i] = new PopulatedStructure(data, StructureDNA.StructureList[block.SDNAIndex], pointerSize);
                     output[i].Size = StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize;
                     output[i].Type = StructureDNA.StructureList[block.SDNAIndex].StructureTypeName;
                     output[i].ContainingBlock = block;
                 }
             else
             {
-                output[0] = new PopulatedStructure(block.Data, StructureDNA.StructureList[block.SDNAIndex]);
+                output[0] = new PopulatedStructure(block.Data, StructureDNA.StructureList[block.SDNAIndex], pointerSize);
                 output[0].Size = StructureDNA.StructureList[block.SDNAIndex].StructureTypeSize;
                 output[0].Type = StructureDNA.StructureList[block.SDNAIndex].StructureTypeName;
                 output[0].ContainingBlock = block;
@@ -82,10 +82,13 @@ namespace BlenderFileReader
         /// </summary>
         public FileBlock ContainingBlock { get; private set; }
 
-        protected PopulatedStructure(byte[] data, SDNAStructure template)
+        private int pointerSize;
+
+        protected PopulatedStructure(byte[] data, SDNAStructure template, int pointerSize)
         {
             FlattenedData = new List<FieldInfo>();
             int pos = 0;
+            this.pointerSize = pointerSize;
             parseStructureFields("", template, data, ref pos); // begin recursive parsing
         }
 
@@ -105,24 +108,24 @@ namespace BlenderFileReader
                     {
                         int width = 1;
                         if(f.Name.Count(v => { return v == '['; }) == 1)
-                            FlattenedData.Add(new FieldInfo(subArray(data, position, Program.PointerSize * getIntFromArrayName(f.Name)),
-                                f.Name, f.Type.Name, (short)Program.PointerSize, breadcrumbs, toParse.StructureTypeName));
+                            FlattenedData.Add(new FieldInfo(subArray(data, position, pointerSize * getIntFromArrayName(f.Name)),
+                                f.Name, f.Type.Name, (short)pointerSize, breadcrumbs, toParse.StructureTypeName, pointerSize));
                         else
                         {
                             int start = f.Name.LastIndexOf('[');
                             int end = f.Name.LastIndexOf(']');
                             string numberString = f.Name.Substring(start + 1, end - 1 - start);
                             width = int.Parse(numberString);
-                            FlattenedData.Add(new FieldInfo(subArray(data, position, Program.PointerSize * getIntFromArrayName(f.Name) * width),
-                                f.Name, f.Type.Name, (short)Program.PointerSize, breadcrumbs, toParse.StructureTypeName));
+                            FlattenedData.Add(new FieldInfo(subArray(data, position, pointerSize * getIntFromArrayName(f.Name) * width),
+                                f.Name, f.Type.Name, (short)pointerSize, breadcrumbs, toParse.StructureTypeName, pointerSize));
                         }
-                        position += Program.PointerSize * width * getIntFromArrayName(f.Name);
+                        position += pointerSize * width * getIntFromArrayName(f.Name);
                     }
                     else
                     {
-                        FlattenedData.Add(new FieldInfo(subArray(data, position, Program.PointerSize),
-                            f.Name, f.Type.Name, (short)Program.PointerSize, breadcrumbs, toParse.StructureTypeName));
-                        position += Program.PointerSize;
+                        FlattenedData.Add(new FieldInfo(subArray(data, position, pointerSize),
+                            f.Name, f.Type.Name, (short)pointerSize, breadcrumbs, toParse.StructureTypeName, pointerSize));
+                        position += pointerSize;
                     }
                 }
                 else if(f.IsPrimitive)
@@ -132,7 +135,7 @@ namespace BlenderFileReader
                         int width = 1;
                         if(f.Name.Count(v => { return v == '['; }) == 1)
                             FlattenedData.Add(new FieldInfo(subArray(data, position, f.Type.Size * getIntFromArrayName(f.Name)),
-                                f.Name, f.Type.Name, f.Type.Size, breadcrumbs, toParse.StructureTypeName));
+                                f.Name, f.Type.Name, f.Type.Size, breadcrumbs, toParse.StructureTypeName, pointerSize));
                         else
                         {
                             int start = f.Name.LastIndexOf('[');
@@ -140,14 +143,14 @@ namespace BlenderFileReader
                             string numberString = f.Name.Substring(start + 1, end - 1 - start);
                             width = int.Parse(numberString);
                             FlattenedData.Add(new FieldInfo(subArray(data, position, f.Type.Size * getIntFromArrayName(f.Name) * width),
-                                f.Name, f.Type.Name, f.Type.Size, breadcrumbs, toParse.StructureTypeName));
+                                f.Name, f.Type.Name, f.Type.Size, breadcrumbs, toParse.StructureTypeName, pointerSize));
                         }
                         position += f.Type.Size * width * getIntFromArrayName(f.Name);
                     }
                     else
                     {
                         FlattenedData.Add(new FieldInfo(subArray(data, position, f.Type.Size),
-                            f.Name, f.Type.Name, f.Type.Size, breadcrumbs, toParse.StructureTypeName));
+                            f.Name, f.Type.Name, f.Type.Size, breadcrumbs, toParse.StructureTypeName, pointerSize));
                         position += f.Type.Size;
                     }
                 }
@@ -197,7 +200,7 @@ namespace BlenderFileReader
     /// <summary>
     /// Holds field info for a flattened structure.
     /// </summary>
-    struct FieldInfo
+    public struct FieldInfo
     {
         /// <summary>
         /// Value of the field in bytes of length Size.
@@ -255,6 +258,8 @@ namespace BlenderFileReader
         /// </summary>
         public readonly string ParentType;
 
+        private int pointerSize;
+
         /// <summary>
         /// Creates a new FieldInfo struct.
         /// </summary>
@@ -264,11 +269,13 @@ namespace BlenderFileReader
         /// <param name="size">Size (in bytes) of the field.</param>
         /// <param name="parent">Name of the parents up to here (like "parent.child" or "parent").</param>
         /// <param name="parentType">Name of the type of the containing object.</param>
-        public FieldInfo(byte[] value, string name, string type, short size, string parent, string parentType)
+        /// <param name="pointerSize">Size of the pointers in the file containing this field</param>
+        public FieldInfo(byte[] value, string name, string type, short size, string parent, string parentType, int pointerSize)
         {
             IsPointer = IsArray = false;
             Length  = 1;
             Dimensions = new[] { 1 };
+            this.pointerSize = pointerSize;
 
             if(name[0] == '*')
             {
@@ -473,14 +480,14 @@ namespace BlenderFileReader
 
         private string getValueAsPointer(int index)
         {
-            if(Size != Program.PointerSize || !IsPointer)
+            if(Size != pointerSize || !IsPointer)
                 throw new InvalidOperationException("This field isn't a pointer.");
 
             string hex;
-            if(Program.PointerSize == 4)
-                hex = "0x" + BitConverter.ToUInt32(Value, index).ToString("X" + (Program.PointerSize * 2));
+            if(pointerSize == 4)
+                hex = "0x" + BitConverter.ToUInt32(Value, index).ToString("X" + (pointerSize * 2));
             else
-                hex = "0x" + BitConverter.ToUInt64(Value, index).ToString("X" + (Program.PointerSize * 2));
+                hex = "0x" + BitConverter.ToUInt64(Value, index).ToString("X" + (pointerSize * 2));
 
             if(hex == "0x00000000" || hex == "0x0000000000000000")
                 return "0x0";
@@ -493,14 +500,14 @@ namespace BlenderFileReader
         /// <returns></returns>
         public string GetValueAsPointerArray()
         {
-            if(Size != Program.PointerSize || !IsPointer || !IsArray)
+            if(Size != pointerSize || !IsPointer || !IsArray)
                 throw new InvalidOperationException("This field isn't an array of pointers.");
 
             string s = "{ ";
             if(Dimensions.Length == 1)
             {
                 for(int i = 0; i < Dimensions[0]; i++)
-                    s += getValueAsPointer(i * Program.PointerSize) + ", ";
+                    s += getValueAsPointer(i * pointerSize) + ", ";
                 s = s.Substring(0, s.Length - 2);
             }
             else
@@ -509,7 +516,7 @@ namespace BlenderFileReader
                 {
                     s += "{ ";
                     for(int j = 0; j < Dimensions[1]; j++)
-                        s += BitConverter.ToUInt32(Value, (i * Dimensions[1] + j) * Program.PointerSize).ToString("X") + ", ";
+                        s += BitConverter.ToUInt32(Value, (i * Dimensions[1] + j) * pointerSize).ToString("X") + ", ";
                     s = s.Substring(0, s.Length - 3);
                     s += " }, ";
                 }

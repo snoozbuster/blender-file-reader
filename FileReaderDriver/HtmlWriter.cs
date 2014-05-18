@@ -4,8 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BlenderFileReader;
 
-namespace BlenderFileReader
+namespace FileReaderDriver
 {
     /// <summary>
     /// An object that writes a file to a handy HTML file.
@@ -15,10 +16,8 @@ namespace BlenderFileReader
         private string path;
         private string friendly;
 
-        private string versionNumber;
-        private List<PopulatedStructure[]> structures;
-
         private int tabDepth = 0;
+        private BlenderFile parsedFile;
         private string tabs { get { string s = ""; for(int i = 0; i < tabDepth; i++) s += "    "; return s; } }
 
         private Stack<string> breadcrumbs = new Stack<string>();
@@ -28,20 +27,19 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="path">Output path.</param>
         /// <param name="friendlyFileName">Input file's friendly name ("cow.blend").</param>
-        public HtmlWriter(string path, string friendlyFileName)
+        public HtmlWriter(BlenderFile parsedFile, string path, string friendlyFileName)
         {
             this.path = path;
             friendly = friendlyFileName;
+            this.parsedFile = parsedFile;
         }
 
         /// <summary>
         /// Writes information to HTML.
         /// </summary>
         /// <param name="structures">List of populated structures.</param>
-        public void WriteBlendFileToHtml(List<PopulatedStructure[]> structures, string versionNumber)
+        public void WriteBlendFileToHtml()
         {
-            this.versionNumber = versionNumber;
-            this.structures = structures;
             writeCSS();
             using(StreamWriter writer = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
             {
@@ -65,13 +63,13 @@ namespace BlenderFileReader
 
         private void writeBodyContent(StreamWriter writer)
         {
-            foreach(PopulatedStructure[] block in structures)
+            foreach(PopulatedStructure[] block in parsedFile.Structures)
             {
                 int index = 0;
                 bool outer_odd = true;
                 writeStartTag(writer, "div", "class=\"structure " + block[0].Type + (block.Length > 1 ? " list" : "") + "\"");
                 writeTable(writer, new[] { "structure_head" },
-                    new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (Program.PointerSize * 2)),
+                    new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)),
                     false, new[] { block[0].Type + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].FlattenedData.Count.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X") });
                 if(block.Length > 1)
                 {
@@ -161,7 +159,7 @@ namespace BlenderFileReader
             string typeName = field.TypeName + (field.IsArray ? (field.IsMultidimensional ? "[]" : "") + "[]" : "");
             if(!field.IsArray && field.IsPointer && field.Type != typeof(FieldInfo) && field.GetValueAsPointer() != "0x0")
             {
-                FileBlock associatedBlock = FileBlock.GetBlockByAddress(Program.PointerSize == 4 ? field.GetValueAsUInt() : field.GetValueAsULong());
+                FileBlock associatedBlock = parsedFile.GetBlockByAddress(parsedFile.PointerSize == 4 ? field.GetValueAsUInt() : field.GetValueAsULong());
                 if(associatedBlock != null)
                     typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
                         StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";
@@ -172,8 +170,8 @@ namespace BlenderFileReader
 
         private void writeBodyHead(StreamWriter writer)
         {
-            writeTable(writer, null, new[] { "Version Number", "File Blocks", "Structures", "Types", "Names", "<a href=\"#raw_blocks\">Raw Data Blocks</a>" }, "blender_header", 
-                               false, new[] { versionNumber, FileBlock.GetBlockList().Count.ToString(), StructureDNA.StructureList.Count.ToString(), StructureDNA.TypeList.Count.ToString(), StructureDNA.NameList.Count.ToString(), PopulatedStructure.RawBlockMessages.Count.ToString() });
+            writeTable(writer, null, new[] { "Version Number", "File Blocks", "Structures", "Types", "Names", "<a href=\"#raw_blocks\">Raw Data Blocks</a>" }, "blender_header",
+                               false, new[] { parsedFile.VersionNumber, parsedFile.GetBlockList().Count.ToString(), StructureDNA.StructureList.Count.ToString(), StructureDNA.TypeList.Count.ToString(), StructureDNA.NameList.Count.ToString(), PopulatedStructure.RawBlockMessages.Count.ToString() });
         }
 
         private void writeTable(StreamWriter writer, string[] titles, params string[][] rows)

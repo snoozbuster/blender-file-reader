@@ -10,7 +10,7 @@ namespace BlenderFileReader
     /// <summary>
     /// Defines a FileBlock that contains a header and data.
     /// </summary>
-    class FileBlock
+    public class FileBlock
     {
         /// <summary>
         /// Four-character code indicating the type of data in the FileBlock.
@@ -39,17 +39,14 @@ namespace BlenderFileReader
         /// </summary>
         public ulong OldMemoryAddress { get; private set; }
 
-        private static List<FileBlock> fileBlocks = new List<FileBlock>();
-
         /// <summary>
         /// Reads a file block and adds it to the master list of file blocks. 
         /// If the block is SDNA, initializes StructureDNA. 
         /// </summary>
         /// <param name="file">A blend file with the reader at the start of a file block.</param>
         /// <returns>The FileBlock that was added to the master list.</returns>
-        public static FileBlock ReadBlock(BinaryReader file)
+        public static FileBlock ReadBlock(BinaryReader file, int pointerSize)
         {
-            int pointerSize = Program.PointerSize;
             if(pointerSize != 4 && pointerSize != 8)
                 throw new ArgumentException("Impossible for pointerSize to be " + pointerSize);
 
@@ -80,7 +77,6 @@ namespace BlenderFileReader
                 file.ReadByte();
 
             block.OldMemoryAddress = address;
-            fileBlocks.Add(block);
             return block;
         }
 
@@ -91,35 +87,6 @@ namespace BlenderFileReader
             SDNAIndex = sdna;
             Count = count;
             Data = data;
-        }
-
-        /// <summary>
-        /// Returns a list of all blocks by a given block code.
-        /// </summary>
-        /// <param name="code">Four-character block code.</param>
-        /// <returns></returns>
-        public static List<FileBlock> GetBlocksByCode(string code)
-        {
-            return fileBlocks.FindAll(v => { return v.Code == code; });
-        }
-
-        /// <summary>
-        /// Gets the file block list.
-        /// </summary>
-        /// <returns></returns>
-        public static List<FileBlock> GetBlockList()
-        {
-            return fileBlocks;
-        }
-
-        /// <summary>
-        /// Gets a single block by its old memory address.
-        /// </summary>
-        /// <param name="address">Old address</param>
-        /// <returns></returns>
-        public static FileBlock GetBlockByAddress(ulong address)
-        {
-            return fileBlocks.Find(v => { return v.OldMemoryAddress == address; });
         }
     }
 }

@@ -1,2 +1,4 @@
 BlenderFileReader/bin*
 BlenderFileReader/obj/*
+FileReaderDriver/bin*
+FileReaderDriver/obj*

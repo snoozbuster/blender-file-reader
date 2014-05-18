@@ -10,7 +10,7 @@ namespace BlenderFileReader
     /// <summary>
     /// Represents the file's StructureDNA.
     /// </summary>
-    static class StructureDNA
+    public static class StructureDNA
     {
         private static bool created = false;
 
