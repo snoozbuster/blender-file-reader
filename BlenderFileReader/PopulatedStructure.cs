@@ -195,6 +195,19 @@ namespace BlenderFileReader
             int number = int.Parse(numberString);
             return number;
         }
+
+        /// <summary>
+        /// Array-style access to fields.
+        /// </summary>
+        /// <param name="key">Name of the flattened field you want to look up.</param>
+        /// <returns>FieldInfo object representing the field with that identifier</returns>
+        public FieldInfo this[string identifier]
+        {
+            get
+            {
+                return FlattenedData.Find(field => { return field.Name == identifier; });
+            }
+        }
     }
 
     /// <summary>
@@ -223,7 +236,7 @@ namespace BlenderFileReader
         public readonly short Size;
 
         /// <summary>
-        /// Indicates if the field is a pointer, in which case the size will always be four.
+        /// Indicates if the field is a pointer, in which case the size will always be <pre>pointerSize</pre>.
         /// </summary>
         public readonly bool IsPointer;
 

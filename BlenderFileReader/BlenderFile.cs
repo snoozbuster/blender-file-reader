@@ -33,6 +33,7 @@ namespace BlenderFileReader
         public StructureDNA StructureDNA { get; private set; }
 
         private List<FileBlock> fileBlocks = new List<FileBlock>();
+        private Dictionary<ulong, PopulatedStructure[]> memoryMap = new Dictionary<ulong, PopulatedStructure[]>();
 
         public BlenderFile(string path)
             : this(new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read)))
@@ -50,7 +51,10 @@ namespace BlenderFileReader
             StructureDNA = readBlocks(reader);
 
             // create PopulatedStructures
-            Structures = createStructures();
+            memoryMap = createStructures();
+            Structures = memoryMap.Values.ToList();
+
+            reader.Close();
         }
 
         private void readHeader(BinaryReader fileReader, out string versionNumber)
@@ -85,20 +89,42 @@ namespace BlenderFileReader
             return dna;
         }
 
-        private List<PopulatedStructure[]> createStructures()
+        private Dictionary<ulong, PopulatedStructure[]> createStructures()
         {
-            List<PopulatedStructure[]> structures = new List<PopulatedStructure[]>();
+            Dictionary<ulong, PopulatedStructure[]> structures = new Dictionary<ulong, PopulatedStructure[]>();
             foreach(FileBlock b in fileBlocks)
             {
                 PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize);
                 if(temp[0] != null)
-                    structures.Add(temp);
+                    structures.Add(b.OldMemoryAddress, temp);
             }
 
-            if(PopulatedStructure.RawBlockMessages.Count > 0)
-                Console.WriteLine(PopulatedStructure.RawBlockMessages.Count + " warnings encountered, more information will be written to file.");
-
             return structures;
+        }
+
+        /// <summary>
+        /// Gets all structures of the named type. This isn't great to use on things like MPoly or other list types, as you won't be able to tell
+        /// when the list ends and the next begins.
+        /// </summary>
+        /// <param name="typeName">Name of the type you want to find.</param>
+        /// <returns>Array of all PopulatedStructures of that type.</returns>
+        public PopulatedStructure[] GetStructuresOfType(string typeName)
+        {
+            List<PopulatedStructure> output = new List<PopulatedStructure>();
+            Structures.ForEach(array => {
+                output.AddRange(array.Where(structure => { return structure.Type == typeName; }));
+            });
+            return output.ToArray();
+        }
+
+        /// <summary>
+        /// Gets an array of PopulatedStructures by their containing FileBlock's old memory address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public PopulatedStructure[] GetStructuresByAddress(ulong address)
+        {
+            return memoryMap[address];
         }
 
         /// <summary>
