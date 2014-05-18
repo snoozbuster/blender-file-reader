@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BlenderFileReader;
 
-namespace FileReaderDriver
+namespace HTMLRendererDriver
 {
     /// <summary>
     /// An object that writes a file to a handy HTML file.

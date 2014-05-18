@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileReaderDriver", "FileReaderDriver\FileReaderDriver.csproj", "{BDD59132-86B1-4E86-80C8-9A2A6238B34B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderFileReader", "BlenderFileReader\BlenderFileReader.csproj", "{312A7422-E654-4BBD-BC2B-931493D1AA7F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HTMLRendererDriver", "HTMLRendererDriver\HTMLRendererDriver.csproj", "{BDD59132-86B1-4E86-80C8-9A2A6238B34B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,14 +11,14 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Debug|x86.ActiveCfg = Debug|x86
-		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Debug|x86.Build.0 = Debug|x86
-		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Release|x86.ActiveCfg = Release|x86
-		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Release|x86.Build.0 = Release|x86
 		{312A7422-E654-4BBD-BC2B-931493D1AA7F}.Debug|x86.ActiveCfg = Debug|x86
 		{312A7422-E654-4BBD-BC2B-931493D1AA7F}.Debug|x86.Build.0 = Debug|x86
 		{312A7422-E654-4BBD-BC2B-931493D1AA7F}.Release|x86.ActiveCfg = Release|x86
 		{312A7422-E654-4BBD-BC2B-931493D1AA7F}.Release|x86.Build.0 = Release|x86
+		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Debug|x86.ActiveCfg = Debug|x86
+		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Debug|x86.Build.0 = Debug|x86
+		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Release|x86.ActiveCfg = Release|x86
+		{BDD59132-86B1-4E86-80C8-9A2A6238B34B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
