@@ -434,6 +434,9 @@ namespace BlenderFileReader
                     else
                         return field.GetValueAsDouble().ToString();
             }
+            if(field.Size == 0)
+                return "nothing";
+
             throw new InvalidOperationException("FieldInfo is confusing.");
         }
 
