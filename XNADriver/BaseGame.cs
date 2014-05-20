@@ -287,6 +287,22 @@ namespace XNADriver
                 using(Stream s = new MemoryStream(rawImage))
                     texture = Texture2D.FromStream(GraphicsDevice, s);
             }
+            else
+            {
+                try
+                {
+                    string texturePath = image["name[1024]"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
+                    string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename[1024]"].ToString();
+                    filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
+                    using(Stream s = File.Open(filePath + texturePath, FileMode.Open, FileAccess.Read))
+                        texture = Texture2D.FromStream(GraphicsDevice, s);
+                }
+                catch
+                {
+                    texture = new Texture2D(GraphicsDevice, 1, 1);
+                    texture.SetData(new Color[] { Color.Gray });
+                }
+            }
             // loops of length 3 are triangles and can be directly added to the vertex list. loops of length 4
             // are quads, and have to be split into two triangles.
             foreach(Vector2 poly in polys)
