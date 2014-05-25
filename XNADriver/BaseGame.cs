@@ -232,6 +232,22 @@ namespace XNADriver
                 using(Stream s = new MemoryStream(rawImage))
                     texture = Texture2D.FromStream(GraphicsDevice, s);
             }
+            else
+            {
+                try
+                {
+                    string texturePath = image["name[1024]"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
+                    string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename[1024]"].ToString();
+                    filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
+                    using(Stream s = File.Open((filePath + texturePath).Replace("\'", ""), FileMode.Open, FileAccess.Read))
+                        texture = Texture2D.FromStream(GraphicsDevice, s);
+                }
+                catch
+                {
+                    texture = new Texture2D(GraphicsDevice, 1, 1);
+                    texture.SetData(new Color[] { Color.Gray });
+                }
+            }
 
             int j = 0;
             foreach(int[] face in faces)
@@ -270,38 +286,51 @@ namespace XNADriver
             List<Vector2> loops = new List<Vector2>(); // using x as "v" and y as "e"
             foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloop"].GetValueAsUInt()))
                 loops.Add(new Vector2(s["v"].GetValueAsInt(), s["e"].GetValueAsInt()));
-            List<Vector2> uvLoops = new List<Vector2>(); // using x as u and y as v
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloopuv"].GetValueAsUInt()))
+            List<Vector2> uvLoops = null; // using x as u and y as v
+            Vector2[] backupUVs = new[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0) }; // in case uvLoops is null
+            if(mesh["mloopuv"].GetValueAsUInt() != 0)
             {
-                float[] uv = s["uv[2]"].GetValueAsFloatArray();
-                uvLoops.Add(new Vector2(uv[0], uv[1]));
+                uvLoops = new List<Vector2>();
+                foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloopuv"].GetValueAsUInt()))
+                {
+                    float[] uv = s["uv[2]"].GetValueAsFloatArray();
+                    uvLoops.Add(new Vector2(uv[0], uv[1]));
+                }
             }
             List<Vector2> polys = new List<Vector2>(); // using x as "loopstart" and y as "totloop" (loop length)
             foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mpoly"].GetValueAsUInt()))
                 polys.Add(new Vector2(s["loopstart"].GetValueAsInt(), s["totloop"].GetValueAsInt()));
-            // assume all faces use same texture
-            PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtpoly"].GetValueAsUInt())[0]["tpage"].GetValueAsUInt())[0];
-            if(image["packedfile"].GetValueAsUInt() != 0)
+            // assume all faces use same texture for now
+            if(mesh["mtpoly"].GetValueAsUInt() != 0)
             {
-                byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsUInt())[0]["data"].GetValueAsUInt()).Data;
-                using(Stream s = new MemoryStream(rawImage))
-                    texture = Texture2D.FromStream(GraphicsDevice, s);
+                PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtpoly"].GetValueAsUInt())[0]["tpage"].GetValueAsUInt())[0];
+                if(image["packedfile"].GetValueAsUInt() != 0)
+                {
+                    byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsUInt())[0]["data"].GetValueAsUInt()).Data;
+                    using(Stream s = new MemoryStream(rawImage))
+                        texture = Texture2D.FromStream(GraphicsDevice, s);
+                }
+                else
+                {
+                    try
+                    {
+                        string texturePath = image["name[1024]"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
+                        string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename[1024]"].ToString();
+                        filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
+                        using(Stream s = File.Open((filePath + texturePath).Replace("\'", ""), FileMode.Open, FileAccess.Read))
+                            texture = Texture2D.FromStream(GraphicsDevice, s);
+                    }
+                    catch
+                    {
+                        texture = new Texture2D(GraphicsDevice, 1, 1);
+                        texture.SetData(new Color[] { Color.Gray });
+                    }
+                }
             }
             else
             {
-                try
-                {
-                    string texturePath = image["name[1024]"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
-                    string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename[1024]"].ToString();
-                    filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
-                    using(Stream s = File.Open(filePath + texturePath, FileMode.Open, FileAccess.Read))
-                        texture = Texture2D.FromStream(GraphicsDevice, s);
-                }
-                catch
-                {
-                    texture = new Texture2D(GraphicsDevice, 1, 1);
-                    texture.SetData(new Color[] { Color.Gray });
-                }
+                texture = new Texture2D(GraphicsDevice, 1, 1);
+                texture.SetData(new Color[] { Color.Gray });
             }
             // loops of length 3 are triangles and can be directly added to the vertex list. loops of length 4
             // are quads, and have to be split into two triangles.
@@ -314,7 +343,8 @@ namespace XNADriver
                 for(int i = loopOffset; i < (int)poly.Y + loopOffset; i++)
                 {
                     faceEdges[j] = edges[(int)loops[i].Y];
-                    faceUVs[j++] = uvLoops[i];
+                    faceUVs[j] = uvLoops == null ? backupUVs[i - loopOffset] : uvLoops[i];
+                    j++;
                 }
                 Vector3[] faceVerts = new Vector3[faceEdges.Length];
                 Vector3[] faceVertNormals = new Vector3[faceEdges.Length];
@@ -325,10 +355,28 @@ namespace XNADriver
                     faceVertNormals[i] = normals[index];
                 }
                 if(faceVerts.Length == 3) // already a triangle
+                {
+                    // push 0 to the end
+                    Vector2 temp = faceUVs[0];
+                    faceUVs[0] = faceUVs[1];
+                    faceUVs[1] = temp;
+                    temp = faceUVs[1];
+                    faceUVs[1] = faceUVs[2];
+                    faceUVs[2] = temp;
+
                     for(int i = 2; i >= 0; i--) // 2, 1, 0
                         output.Add(new VertexPositionNormalTexture(faceVerts[i], faceVertNormals[i], faceUVs[i]));
+                }
                 else if(faceVerts.Length == 4) // quad, split into tris
                 {
+                    // swap 3 with 1 and 2 with 3
+                    Vector2 temp = faceUVs[1];
+                    faceUVs[1] = faceUVs[3];
+                    faceUVs[3] = temp;
+                    temp = faceUVs[2];
+                    faceUVs[2] = faceUVs[3];
+                    faceUVs[3] = temp;
+
                     // 2, 1, 0
                     for(int i = 2; i >= 0; i--)
                         output.Add(new VertexPositionNormalTexture(faceVerts[i], faceVertNormals[i], faceUVs[i]));
@@ -348,7 +396,11 @@ namespace XNADriver
             effect.Projection = camera.Projection;
             effect.World = camera.World;
             GraphicsDevice.RasterizerState = RasterizerState.CullNone;
+            GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
             effect.LightingEnabled = true;
+            effect.DirectionalLight0.Direction = -Vector3.UnitZ;
+            effect.DirectionalLight1.Enabled = true;
+            effect.DirectionalLight1.Direction = Vector3.UnitZ;
             effect.TextureEnabled = true;
             effect.VertexColorEnabled = false;
             effect.Texture = texture;

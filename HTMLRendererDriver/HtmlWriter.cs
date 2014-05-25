@@ -70,7 +70,7 @@ namespace HTMLRendererDriver
                 writeStartTag(writer, "div", "class=\"structure " + block[0].Type + (block.Length > 1 ? " list" : "") + "\"");
                 writeTable(writer, new[] { "structure_head" },
                     new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)),
-                    false, new[] { block[0].Type + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].FlattenedData.Count.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X") });
+                    false, new[] { block[0].Type + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].FlattenedData.Count.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)) });
                 if(block.Length > 1)
                 {
                     writeStartTag(writer, "table", "class=\"structure_body\"");
