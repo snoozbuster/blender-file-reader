@@ -239,6 +239,11 @@ namespace BlenderFileReader
         /// Indicates if the field is a pointer, in which case the size will always be <pre>pointerSize</pre>.
         /// </summary>
         public readonly bool IsPointer;
+        
+        /// <summary>
+        /// Indicates if the field is a pointer to a pointer.
+        /// </summary>
+        public readonly bool IsPointerToPointer;
 
         /// <summary>
         /// Indicates if the field is an array.
@@ -285,7 +290,7 @@ namespace BlenderFileReader
         /// <param name="pointerSize">Size of the pointers in the file containing this field</param>
         public FieldInfo(byte[] value, string name, string type, short size, string parent, string parentType, int pointerSize)
         {
-            IsPointer = IsArray = false;
+            IsPointer = IsArray = IsPointerToPointer = false;
             Length  = 1;
             Dimensions = new[] { 1 };
             this.pointerSize = pointerSize;
@@ -295,7 +300,10 @@ namespace BlenderFileReader
                 IsPointer = true;
                 name = name.Substring(1);
                 if(name[0] == '*')
+                {
+                    IsPointerToPointer = true;
                     name = name.Substring(1);
+                }
                 if(name[0] == '*')
                     throw new Exception("help");
             }

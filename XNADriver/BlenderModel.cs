@@ -18,6 +18,7 @@ namespace XNADriver
         public readonly VertexPositionNormalTexture[] Vertices;
         public readonly VertexBuffer VertexBuffer;
         public readonly Texture2D Texture;
+        public readonly string Name;
 
         public Vector3 Position = Vector3.Zero;
         public Quaternion Rotation = Quaternion.Identity;
@@ -72,8 +73,8 @@ namespace XNADriver
             this.VertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionNormalTexture.VertexDeclaration, this.Vertices.Length, BufferUsage.None);
             this.NormalBuffer = new VertexBuffer(GraphicsDevice, VertexPositionColor.VertexDeclaration, this.NormalVerts.Length, BufferUsage.None);
             this.Texture = texture;
+            this.Name = new string(obj["id.name[66]"].GetValueAsCharArray()).Split('\0')[0].Substring(2); // remove null term, remove first two characters
         }
-
 
         private List<Vector3> convertNormals(List<short[]> unconvertedNormals)
         {
