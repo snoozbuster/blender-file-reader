@@ -40,11 +40,12 @@ namespace BlenderFileReader
         public ulong OldMemoryAddress { get; private set; }
 
         /// <summary>
-        /// Reads a file block and adds it to the master list of file blocks. 
-        /// If the block is SDNA, initializes StructureDNA. 
+        /// Reads a file block and returns it. 
+        /// If the block is SDNA, initializes and returns an instance of <pre>StructureDNA</pre>. 
         /// </summary>
         /// <param name="file">A blend file with the reader at the start of a file block.</param>
-        /// <returns>The FileBlock that was added to the master list.</returns>
+        /// <param name="pointerSize">The pointer size of the current file.</param>
+        /// <returns>A parsed FileBlock.</returns>
         public static FileBlock ReadBlock(BinaryReader file, int pointerSize)
         {
             if(pointerSize != 4 && pointerSize != 8)
@@ -55,6 +56,7 @@ namespace BlenderFileReader
             byte[] data;
             ulong address;
 
+            // read block header
             code = new string(file.ReadChars(4));
             size = file.ReadInt32();
             address = pointerSize == 4 ? file.ReadUInt32() : file.ReadUInt64();
@@ -62,17 +64,14 @@ namespace BlenderFileReader
             count = file.ReadInt32();
             data = file.ReadBytes(size);
 
-            FileBlock block;
-
-            if(code == "DNA1") // then this block is StructureDNA
-                block = new StructureDNA(code, size, sdna, count, data);
-            else
-                block = new FileBlock(code, size, sdna, count, data);
+            FileBlock block = code == "DNA1" ? new StructureDNA(code, size, sdna, count, data) : 
+                                               new FileBlock(code, size, sdna, count, data);
 
             // blocks are aligned at four bytes
             while(file.BaseStream.Position % 4 != 0 && file.BaseStream.Position < file.BaseStream.Length) // don't want to read off the file by accident
                 file.ReadByte();
 
+            // I'm not 100% sure why this is done here.
             block.OldMemoryAddress = address;
             return block;
         }
@@ -85,5 +84,7 @@ namespace BlenderFileReader
             Count = count;
             Data = data;
         }
+
+        // todo: perhaps I could add some convenience methods here
     }
 }

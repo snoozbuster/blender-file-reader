@@ -32,13 +32,27 @@ namespace BlenderFileReader
         /// </summary>
         public StructureDNA StructureDNA { get; private set; }
 
+        /// <summary>
+        /// A list of pieces of information about raw data blocks (blocks that are just data). In the format
+        /// "block_number block_address block_code block_index bytes_given bytes_expected"
+        /// </summary>
+        public List<string> RawBlockMessages = new List<string>();
+
         private List<FileBlock> fileBlocks = new List<FileBlock>();
         private Dictionary<ulong, PopulatedStructure[]> memoryMap = new Dictionary<ulong, PopulatedStructure[]>();
 
+        /// <summary>
+        /// Creates a new parsed <pre>BlenderFile</pre> from a filepath.
+        /// </summary>
+        /// <param name="path">Path to <pre>.blend</pre> file to be parsed.</param>
         public BlenderFile(string path)
             : this(new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read)))
         { }
 
+        /// <summary>
+        /// Creates a new parsed <pre>BlenderFile</pre> from a <pre>BinaryReader</pre> containing a <pre>.blend</pre> file.
+        /// </summary>
+        /// <param name="reader"><pre>BinaryReader</pre> containing a Blender file.</param>
         public BlenderFile(BinaryReader reader)
         {
             string versionNumber;
@@ -57,10 +71,15 @@ namespace BlenderFileReader
             reader.Close();
         }
 
+        /// <summary>
+        /// Reads the header of the blend file
+        /// </summary>
+        /// <param name="fileReader"></param>
+        /// <param name="versionNumber"></param>
         private void readHeader(BinaryReader fileReader, out string versionNumber)
         {
             versionNumber = null;
-            fileReader.ReadBytes(7); // read out 'BLENDER'
+            fileReader.ReadBytes(7); // read out 'BLENDER', this can be used to determine if the file is gzipped
             PointerSize = Convert.ToChar(fileReader.ReadByte()) == '_' ? 4 : 8; // '_' = 4, '-' = 8
             char endianness = Convert.ToChar(fileReader.ReadByte()); // 'v' = little, 'V' = big
 
@@ -68,10 +87,17 @@ namespace BlenderFileReader
                 || (endianness != 'v' && endianness != 'V'))
                 throw new InvalidDataException("Endianness of computer does not appear to match endianness of file. Open the file in Blender and save it to convert.");
 
+            // read out version number
             versionNumber = new string(new[] { Convert.ToChar(fileReader.ReadByte()), '.', Convert.ToChar(fileReader.ReadByte()),
                 Convert.ToChar(fileReader.ReadByte()) });
         }
 
+        /// <summary>
+        /// Reads the file blocks from the file. Returns the block with the code <pre>DNA1</pre>, which is the file's
+        /// structure DNA.
+        /// </summary>
+        /// <param name="fileReader">Reference to file reader for current file.</param>
+        /// <returns>File's Structure DNA.</returns>
         private StructureDNA readBlocks(BinaryReader fileReader)
         {
             StructureDNA dna = null;
@@ -89,13 +115,18 @@ namespace BlenderFileReader
             return dna;
         }
 
+        /// <summary>
+        /// Parses the file blocks to create a map of memory addresses to populated structures.
+        /// </summary>
+        /// <returns>A dictionary mapping memory addresses to the structures held in the corresponding file block.</returns>
         private Dictionary<ulong, PopulatedStructure[]> createStructures()
         {
             Dictionary<ulong, PopulatedStructure[]> structures = new Dictionary<ulong, PopulatedStructure[]>();
+            int blocksParsed = 0;
             foreach(FileBlock b in fileBlocks)
             {
-                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize);
-                if(temp[0] != null)
+                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize, blocksParsed++, RawBlockMessages);
+                if(temp != null)
                     structures.Add(b.OldMemoryAddress, temp);
             }
 

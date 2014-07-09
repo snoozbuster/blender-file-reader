@@ -41,11 +41,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlenderField.cs" />
     <Compile Include="BlenderFile.cs" />
+    <Compile Include="BlenderType.cs" />
+    <Compile Include="FieldInfo.cs" />
     <Compile Include="FileBlock.cs" />
     <Compile Include="PopulatedStructure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Structs.cs" />
+    <Compile Include="SDNAStructure.cs" />
     <Compile Include="StructureDNA.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

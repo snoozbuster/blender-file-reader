@@ -92,8 +92,10 @@ namespace XNADriver
                 this.TextureHasTransparency = mat["game.alpha_blend"].GetValueAsInt() != 0;
 
                 int mode = mat["mode"].GetValueAsInt();
-                this.LightingEnabled = (mode & 4) == 0;
+                this.LightingEnabled = (mode & 4) == 0; // as far as I can tell, this is where "shadeless" is stored.
             }
+            else
+                this.LightingEnabled = true;
         }
 
         private List<Vector3> convertNormals(List<short[]> unconvertedNormals)

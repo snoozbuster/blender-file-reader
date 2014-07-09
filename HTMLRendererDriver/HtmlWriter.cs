@@ -1,10 +1,8 @@
-﻿using System;
+﻿using BlenderFileReader;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BlenderFileReader;
 
 namespace HTMLRendererDriver
 {
@@ -114,9 +112,9 @@ namespace HTMLRendererDriver
         private void writeRawDataInfo(StreamWriter writer)
         {
             writeStartTag(writer, "div", "id=\"raw_blocks\"");
-            string[][] rows = new string[PopulatedStructure.RawBlockMessages.Count][];
-            for(int i = 0; i < PopulatedStructure.RawBlockMessages.Count; i++)
-                rows[i] = PopulatedStructure.RawBlockMessages[i].Split(' ');
+            string[][] rows = new string[parsedFile.RawBlockMessages.Count][];
+            for(int i = 0; i < parsedFile.RawBlockMessages.Count; i++)
+                rows[i] = parsedFile.RawBlockMessages[i].Split(' ');
             for(int i = 0; i < rows.Length; i++)
                 rows[i][1] = "<a id=\"0x" + rows[i][1] + "\">0x" + rows[i][1] + "</a>";
             writeTable(writer, new[] { "Raw Data Blocks:" });
@@ -166,7 +164,7 @@ namespace HTMLRendererDriver
                                     pointers[index / parsedFile.PointerSize] = parsedFile.PointerSize == 4 ? BitConverter.ToUInt32(pointed.Data, index) : BitConverter.ToUInt64(pointed.Data, index);
                                     index += parsedFile.PointerSize;
                                 }
-                                string[] temp = pointers.Select(i => { return "0x" + (i == 0 ? "0" : i.ToString("X" + parsedFile.PointerSize)); }).ToArray();
+                                string[] temp = pointers.Select(i => { return "0x" + (i == 0 ? "0" : i.ToString("X" + (parsedFile.PointerSize * 2))); }).ToArray();
                                 temp = temp.Select(i => { return i == "0x0" ? i : "<a href=\"#" + i + "\">" + i + "</a>"; }).ToArray();
 
                                 fieldVal += "{ " + string.Join(", ", temp) + " })";
@@ -194,7 +192,7 @@ namespace HTMLRendererDriver
         private void writeBodyHead(StreamWriter writer)
         {
             writeTable(writer, null, new[] { "Version Number", "File Blocks", "Structures", "Types", "Names", "<a href=\"#raw_blocks\">Raw Data Blocks</a>" }, "blender_header",
-                               false, new[] { parsedFile.VersionNumber, parsedFile.GetBlockList().Count.ToString(), parsedFile.StructureDNA.StructureList.Count.ToString(), parsedFile.StructureDNA.TypeList.Count.ToString(), parsedFile.StructureDNA.NameList.Count.ToString(), PopulatedStructure.RawBlockMessages.Count.ToString() });
+                               false, new[] { parsedFile.VersionNumber, parsedFile.GetBlockList().Count.ToString(), parsedFile.StructureDNA.StructureList.Count.ToString(), parsedFile.StructureDNA.TypeList.Count.ToString(), parsedFile.StructureDNA.NameList.Count.ToString(), parsedFile.RawBlockMessages.Count.ToString() });
         }
 
         private void writeTable(StreamWriter writer, string[] titles, params string[][] rows)
