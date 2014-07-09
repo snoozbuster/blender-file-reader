@@ -120,7 +120,7 @@ namespace XNADriver
 
                         code = 1 << (code - 1);
                         if(keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift))
-                            currentLayer ^= code;
+                            currentLayer ^= code; // toggle bit
                         else
                             currentLayer = code;
                     }
@@ -216,11 +216,12 @@ namespace XNADriver
                 GraphicsDevice.BlendState = BlendState.Opaque;
                 GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             }
-            effect.LightingEnabled = true;
+            effect.LightingEnabled = model.LightingEnabled;
             effect.DirectionalLight0.Direction = -Vector3.UnitZ;
             effect.DirectionalLight1.Enabled = true;
             effect.DirectionalLight1.Direction = Vector3.UnitZ;
             effect.TextureEnabled = true;
+            effect.PreferPerPixelLighting = true;
             effect.VertexColorEnabled = false;
             effect.Texture = model.Texture;
             GraphicsDevice.SetVertexBuffer(model.VertexBuffer);

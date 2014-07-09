@@ -84,8 +84,16 @@ namespace XNADriver
             this.Layer = obj["lay"].GetValueAsInt();
 
             // the "mat" field is a pointer to a pointer (technically, a pointer to an array of pointers)
-            PopulatedStructure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(mesh["mat"].GetValueAsUInt()).Data, 0))[0];
-            this.TextureHasTransparency = mat["game.alpha_blend"].GetValueAsInt() == 1;
+            // I'm not sure what to do with multiple materials, so just use the first one
+            uint blockaddr = mesh["mat"].GetValueAsUInt();
+            if(blockaddr != 0)
+            {
+                PopulatedStructure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
+                this.TextureHasTransparency = mat["game.alpha_blend"].GetValueAsInt() != 0;
+
+                int mode = mat["mode"].GetValueAsInt();
+                this.LightingEnabled = (mode & 4) == 0;
+            }
         }
 
         private List<Vector3> convertNormals(List<short[]> unconvertedNormals)
