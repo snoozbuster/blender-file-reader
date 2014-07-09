@@ -155,20 +155,24 @@ namespace HTMLRendererDriver
                         fieldVal = "<a href=\"#" + fieldVal + "\">" + fieldVal + "</a>";
                         if(field.IsPointerToPointer)
                         {
-                            fieldVal += " (pointer to pointer: ";
+                            fieldVal += " (pointer to pointer array: ";
                             FileBlock pointed = parsedFile.GetBlockByAddress(field.GetValueAsUInt());
-                            if(pointed != null && pointed.Size == parsedFile.PointerSize) // probably a pointer
+                            if(pointed != null && pointed.Size % parsedFile.PointerSize == 0) // probably a pointer
                             {
-                                string newVal = "0x" + (parsedFile.PointerSize == 4 ? BitConverter.ToInt32(pointed.Data, 0) : BitConverter.ToInt64(pointed.Data, 0)).ToString("X" + (parsedFile.PointerSize * 2));
-                                if(newVal == "0x00000000" || newVal == "0x0000000000000000")
-                                    newVal = "0x0";
-                                if(newVal != "0x0")
-                                    fieldVal += "<a href=\"#" + newVal + "\">" + newVal + "</a>)";
-                                else
-                                    fieldVal += newVal + ")";
+                                ulong[] pointers = new ulong[pointed.Size / parsedFile.PointerSize];
+                                int index = 0;
+                                while(index != pointed.Size)
+                                {
+                                    pointers[index / parsedFile.PointerSize] = parsedFile.PointerSize == 4 ? BitConverter.ToUInt32(pointed.Data, index) : BitConverter.ToUInt64(pointed.Data, index);
+                                    index += parsedFile.PointerSize;
+                                }
+                                string[] temp = pointers.Select(i => { return "0x" + (i == 0 ? "0" : i.ToString("X" + parsedFile.PointerSize)); }).ToArray();
+                                temp = temp.Select(i => { return i == "0x0" ? i : "<a href=\"#" + i + "\">" + i + "</a>"; }).ToArray();
+
+                                fieldVal += "{ " + string.Join(", ", temp) + " })";
                             }
                             else
-                                fieldVal += "...but target doesn't look like a pointer)";
+                                fieldVal += "...but target doesn't look like a pointer array)";
                         }
                     }
                 }

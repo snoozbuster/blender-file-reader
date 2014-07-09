@@ -18,7 +18,12 @@ namespace XNADriver
         public readonly VertexPositionNormalTexture[] Vertices;
         public readonly VertexBuffer VertexBuffer;
         public readonly Texture2D Texture;
+
         public readonly string Name;
+        public readonly int Layer;
+
+        public readonly bool TextureHasTransparency;
+        public readonly bool LightingEnabled;
 
         public Vector3 Position = Vector3.Zero;
         public Quaternion Rotation = Quaternion.Identity;
@@ -74,6 +79,13 @@ namespace XNADriver
             this.NormalBuffer = new VertexBuffer(GraphicsDevice, VertexPositionColor.VertexDeclaration, this.NormalVerts.Length, BufferUsage.None);
             this.Texture = texture;
             this.Name = new string(obj["id.name[66]"].GetValueAsCharArray()).Split('\0')[0].Substring(2); // remove null term, remove first two characters
+
+            // LSB on represents layer 1, next bit is layer 2, etc
+            this.Layer = obj["lay"].GetValueAsInt();
+
+            // the "mat" field is a pointer to a pointer (technically, a pointer to an array of pointers)
+            PopulatedStructure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(mesh["mat"].GetValueAsUInt()).Data, 0))[0];
+            this.TextureHasTransparency = mat["game.alpha_blend"].GetValueAsInt() == 1;
         }
 
         private List<Vector3> convertNormals(List<short[]> unconvertedNormals)

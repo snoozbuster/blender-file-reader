@@ -29,8 +29,11 @@ namespace XNADriver
         VertexPositionColor[] axisVerts = null;
 
         List<BlenderModel> models = new List<BlenderModel>();
+        List<BlenderModel> transparentModels = new List<BlenderModel>();
 
         Camera camera;
+
+        int currentLayer = 1;
 
         KeyboardState keyboardLastFrame;
 
@@ -101,6 +104,28 @@ namespace XNADriver
             if(keyboard.IsKeyUp(Keys.O) && keyboardLastFrame.IsKeyDown(Keys.O))
                 loadFile();
 
+            foreach (Keys key in keyboard.GetPressedKeys())
+                if(keyboardLastFrame.IsKeyUp(key)) // check to see if just pressed
+                {
+                    int code = key.GetHashCode();
+
+                    if(code >= 48 && code <= 57)
+                    {
+                        if(code == 48)
+                            code = 10;
+                        else
+                            code -= 48;
+                        if(keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt))
+                            code += 10;
+
+                        code = 1 << (code - 1);
+                        if(keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift))
+                            currentLayer ^= code;
+                        else
+                            currentLayer = code;
+                    }
+                }
+
             base.Update(gameTime);
 
             keyboardLastFrame = keyboard;
@@ -117,7 +142,12 @@ namespace XNADriver
             drawAxes();
 
             foreach(BlenderModel m in models)
-                drawModel(m);
+                if((m.Layer & currentLayer) != 0)
+                    drawModel(m);
+
+            foreach(BlenderModel m in transparentModels)
+                if((m.Layer & currentLayer) != 0)
+                    drawModel(m, true);
 
             base.Draw(gameTime);
         }
@@ -135,8 +165,9 @@ namespace XNADriver
         private void loadModelData(BlenderFile file)
         {
             models = new List<BlenderModel>();
+            transparentModels = new List<BlenderModel>();
+            currentLayer = 1;
 
-            // this will crash if there are no meshes, because I don't want to deal with checking to see when things are the null pointer
             PopulatedStructure curscene = file.GetStructuresByAddress(file.GetStructuresOfType("FileGlobal")[0]["curscene"].GetValueAsUInt())[0];
             uint next = curscene["base.first"].GetValueAsUInt();
             while(next != 0)
@@ -147,26 +178,44 @@ namespace XNADriver
                 int SDNAIndex = file.GetBlockByAddress(data.GetValueAsUInt()).SDNAIndex;
                 while(file.StructureDNA.StructureList[SDNAIndex].StructureTypeName != "Mesh")
                 {
-                    objBase = file.GetStructuresByAddress(objBase["next"].GetValueAsUInt())[0];
+                    uint nextPointer = objBase["next"].GetValueAsUInt();
+                    if(nextPointer == 0)
+                        return; // we've run out of objects in the list, and haven't found any meshes
+
+                    objBase = file.GetStructuresByAddress(nextPointer)[0];
                     obj = file.GetStructuresByAddress(objBase["object"].GetValueAsUInt())[0];
                     data = obj["data"];
                     SDNAIndex = file.GetBlockByAddress(data.GetValueAsUInt()).SDNAIndex;
                 }
                 
                 PopulatedStructure mesh = file.GetStructuresByAddress(data.GetValueAsUInt())[0];
-                models.Add(new BlenderModel(mesh, obj, GraphicsDevice, file));
+                BlenderModel model = new BlenderModel(mesh, obj, GraphicsDevice, file);
+                if(model.TextureHasTransparency)
+                    transparentModels.Add(model);
+                else
+                    models.Add(model);
 
                 next = objBase["next"].GetValueAsUInt();
             }
         }
 
-        private void drawModel(BlenderModel model)
+        private void drawModel(BlenderModel model, bool transparent = false)
         {
             effect.View = camera.View;
             effect.Projection = camera.Projection;
             effect.World = camera.World * Matrix.CreateScale(model.Scale) * Matrix.CreateFromQuaternion(model.Rotation) * Matrix.CreateTranslation(model.Position);
             GraphicsDevice.RasterizerState = RasterizerState.CullNone;
             GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+            if(transparent)
+            {
+                GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+                GraphicsDevice.BlendState = BlendState.AlphaBlend;
+            }
+            else
+            {
+                GraphicsDevice.BlendState = BlendState.Opaque;
+                GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            }
             effect.LightingEnabled = true;
             effect.DirectionalLight0.Direction = -Vector3.UnitZ;
             effect.DirectionalLight1.Enabled = true;
