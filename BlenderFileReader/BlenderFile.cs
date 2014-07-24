@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BlenderFileReader
 {
@@ -38,6 +36,12 @@ namespace BlenderFileReader
         /// </summary>
         public List<string> RawBlockMessages = new List<string>();
 
+        /// <summary>
+        /// The path on disk to the file. May be null if the <pre>BlenderFile</pre> was instantiated with 
+        /// a <pre>BinaryReader</pre> instead of a string.
+        /// </summary>
+        public string SourceFilename { get; private set; }
+
         private List<FileBlock> fileBlocks = new List<FileBlock>();
         private Dictionary<ulong, PopulatedStructure[]> memoryMap = new Dictionary<ulong, PopulatedStructure[]>();
 
@@ -47,10 +51,14 @@ namespace BlenderFileReader
         /// <param name="path">Path to <pre>.blend</pre> file to be parsed.</param>
         public BlenderFile(string path)
             : this(new BinaryReader(File.Open(path, FileMode.Open, FileAccess.Read)))
-        { }
+        {
+            SourceFilename = path;
+        }
 
         /// <summary>
         /// Creates a new parsed <pre>BlenderFile</pre> from a <pre>BinaryReader</pre> containing a <pre>.blend</pre> file.
+        /// Warning: this constructor will not and cannot set SourceFilename, as the reader has no way of
+        /// knowing where its source stream came from.
         /// </summary>
         /// <param name="reader"><pre>BinaryReader</pre> containing a Blender file.</param>
         public BlenderFile(BinaryReader reader)
