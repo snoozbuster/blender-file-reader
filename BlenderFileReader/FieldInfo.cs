@@ -176,7 +176,7 @@ namespace BlenderFileReader
                 if(field.IsArray)
                     return field.GetValueAsPointerArray();
                 else
-                    return field.GetValueAsPointer();
+                    return field.GetValueAsPointerString();
             }
             if(field.IsMultidimensional)
                 return print2DArray(field.GetValueAsMultidimensionalArray(), field.Dimensions[0], field.Dimensions[1]);
@@ -296,7 +296,7 @@ namespace BlenderFileReader
         /// Gets the field as a hexadecimal pointer string. Fails if field isn't a pointer.
         /// </summary>
         /// <returns></returns>
-        public string GetValueAsPointer()
+        public string GetValueAsPointerString()
         {
             if(IsArray) // others will be checked in the next function
                 throw new InvalidOperationException("This field isn't a pointer.");
@@ -322,6 +322,18 @@ namespace BlenderFileReader
         }
 
         /// <summary>
+        /// Gets the field as either a 4-byte pointer or an 8-byte pointer, depending on the file.
+        /// </summary>
+        /// <returns></returns>
+        public ulong GetValueAsPointer()
+        {
+            if(Size != pointerSize || !IsPointer || IsArray)
+                throw new InvalidOperationException("This field isn't a pointer.");
+
+            return pointerSize == 4 ? BitConverter.ToUInt32(Value, index) : BitConverter.ToUInt64(Value, index);
+        }
+
+        /// <summary>
         /// Gets the field as an array of hexadecimal pointers. Fails if field isn't an array of pointers.
         /// </summary>
         /// <returns></returns>
@@ -330,7 +342,7 @@ namespace BlenderFileReader
             if(Size != pointerSize || !IsPointer || !IsArray)
                 throw new InvalidOperationException("This field isn't an array of pointers.");
 
-            // this could be redone to use string.Join()
+            // todo: this could be redone to use string.Join()
             string s = "{ ";
             if(Dimensions.Length == 1)
             {

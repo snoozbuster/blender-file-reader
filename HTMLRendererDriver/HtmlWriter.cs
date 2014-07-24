@@ -154,7 +154,7 @@ namespace HTMLRendererDriver
                         if(field.IsPointerToPointer)
                         {
                             fieldVal += " (pointer to pointer array: ";
-                            FileBlock pointed = parsedFile.GetBlockByAddress(field.GetValueAsUInt());
+                            FileBlock pointed = parsedFile.GetBlockByAddress(field.GetValueAsPointer());
                             if(pointed != null && pointed.Size % parsedFile.PointerSize == 0) // probably a pointer
                             {
                                 ulong[] pointers = new ulong[pointed.Size / parsedFile.PointerSize];
@@ -178,9 +178,9 @@ namespace HTMLRendererDriver
             }
 
             string typeName = field.TypeName + (field.IsArray ? (field.IsMultidimensional ? "[]" : "") + "[]" : "");
-            if(!field.IsArray && field.IsPointer && field.Type != typeof(FieldInfo) && field.GetValueAsPointer() != "0x0")
+            if(!field.IsArray && field.IsPointer && field.Type != typeof(FieldInfo) && field.GetValueAsPointerString() != "0x0")
             {
-                FileBlock associatedBlock = parsedFile.GetBlockByAddress(parsedFile.PointerSize == 4 ? field.GetValueAsUInt() : field.GetValueAsULong());
+                FileBlock associatedBlock = parsedFile.GetBlockByAddress(field.GetValueAsPointer());
                 if(associatedBlock != null)
                     typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
                         parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";

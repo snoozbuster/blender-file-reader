@@ -42,7 +42,7 @@ namespace XNADriver
             // both structures use the same vertex structure
             List<Vector3> verts = new List<Vector3>();
             List<short[]> unconvertedNormals = new List<short[]>();
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mvert"].GetValueAsUInt()))
+            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mvert"].GetValueAsPointer()))
             {
                 float[] vector = s["co[3]"].GetValueAsFloatArray();
                 unconvertedNormals.Add(s["no[3]"].GetValueAsShortArray());
@@ -83,7 +83,7 @@ namespace XNADriver
 
             // the "mat" field is a pointer to a pointer (technically, a pointer to an array of pointers)
             // I'm not sure what to do with multiple materials, so just use the first one
-            uint blockaddr = mesh["mat"].GetValueAsUInt();
+            ulong blockaddr = mesh["mat"].GetValueAsPointer();
             if(blockaddr != 0)
             {
                 PopulatedStructure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
@@ -133,16 +133,16 @@ namespace XNADriver
 
             List<int[]> faces = new List<int[]>();
             List<float[,]> tFaces = new List<float[,]>();
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mface"].GetValueAsUInt()))
+            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mface"].GetValueAsPointer()))
                 faces.Add(new[] { s["v1"].GetValueAsInt(), s["v2"].GetValueAsInt(), s["v3"].GetValueAsInt(), s["v4"].GetValueAsInt() });
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mtface"].GetValueAsUInt()))
+            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mtface"].GetValueAsPointer()))
                 tFaces.Add((float[,])s["uv[4][2]"].GetValueAsMultidimensionalArray());
 
             // assume all faces use same texture
-            PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtface"].GetValueAsUInt())[0]["tpage"].GetValueAsUInt())[0];
-            if(image["packedfile"].GetValueAsUInt() != 0)
+            PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtface"].GetValueAsPointer())[0]["tpage"].GetValueAsPointer())[0];
+            if(image["packedfile"].GetValueAsPointer() != 0)
             {
-                byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsUInt())[0]["data"].GetValueAsUInt()).Data;
+                byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsPointer())[0]["data"].GetValueAsPointer()).Data;
                 using(Stream s = new MemoryStream(rawImage))
                     texture = Texture2D.FromStream(GraphicsDevice, s);
             }
@@ -193,36 +193,36 @@ namespace XNADriver
             List<VertexPositionNormalTexture> output = new List<VertexPositionNormalTexture>();
 
             List<Vector2> edges = new List<Vector2>(); // using x as index1 and y as index2
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["medge"].GetValueAsUInt()))
+            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["medge"].GetValueAsPointer()))
                 edges.Add(new Vector2(s["v1"].GetValueAsInt(), s["v2"].GetValueAsInt()));
             // a "loop" is a vertex index and an edge index. Groups of these are used to define a "poly", which is a face. 
             List<Vector2> loops = new List<Vector2>(); // using x as "v" and y as "e"
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloop"].GetValueAsUInt()))
+            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloop"].GetValueAsPointer()))
                 loops.Add(new Vector2(s["v"].GetValueAsInt(), s["e"].GetValueAsInt()));
             List<Vector2> uvLoops = null; // using x as u and y as v
             Vector2[] backupUVs = new[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0) }; // in case uvLoops is null
-            if(mesh["mloopuv"].GetValueAsUInt() != 0)
+            if(mesh["mloopuv"].GetValueAsPointer() != 0)
             {
                 uvLoops = new List<Vector2>();
-                foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloopuv"].GetValueAsUInt()))
+                foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloopuv"].GetValueAsPointer()))
                 {
                     float[] uv = s["uv[2]"].GetValueAsFloatArray();
                     uvLoops.Add(new Vector2(uv[0], uv[1]));
                 }
             }
             List<Vector2> polys = new List<Vector2>(); // using x as "loopstart" and y as "totloop" (loop length)
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mpoly"].GetValueAsUInt()))
+            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mpoly"].GetValueAsPointer()))
                 polys.Add(new Vector2(s["loopstart"].GetValueAsInt(), s["totloop"].GetValueAsInt()));
             // assume all faces use same texture for now
-            if(mesh["mtpoly"].GetValueAsUInt() != 0)
+            if(mesh["mtpoly"].GetValueAsPointer() != 0)
             {
                 try
                 {
                     // todo: sometimes this line fails, probably due to "assume all faces use same texture"
-                    PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtpoly"].GetValueAsUInt())[0]["tpage"].GetValueAsUInt())[0];
-                    if(image["packedfile"].GetValueAsUInt() != 0)
+                    PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtpoly"].GetValueAsPointer())[0]["tpage"].GetValueAsPointer())[0];
+                    if(image["packedfile"].GetValueAsPointer() != 0)
                     {
-                        byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsUInt())[0]["data"].GetValueAsUInt()).Data;
+                        byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsPointer())[0]["data"].GetValueAsPointer()).Data;
                         using(Stream s = new MemoryStream(rawImage))
                             texture = Texture2D.FromStream(GraphicsDevice, s);
                     }
