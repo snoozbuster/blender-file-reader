@@ -330,7 +330,7 @@ namespace BlenderFileReader
             if(Size != pointerSize || !IsPointer || IsArray)
                 throw new InvalidOperationException("This field isn't a pointer.");
 
-            return pointerSize == 4 ? BitConverter.ToUInt32(Value, index) : BitConverter.ToUInt64(Value, index);
+            return pointerSize == 4 ? BitConverter.ToUInt32(Value, 0) : BitConverter.ToUInt64(Value, 0);
         }
 
         /// <summary>
