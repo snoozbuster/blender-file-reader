@@ -1,0 +1,3 @@
+﻿[FileGlobal]
+(this)=Contains information about the file itself; really, it's exactly what it says on the tin.
+curscene=Pointer to the current scene. This is probably the easiest starting point for digging through the interesting parts of the file.

@@ -1,0 +1,64 @@
+/*
+Feel free to edit this file to preference; as long as it exists the utility will not overwrite it.
+Just delete it and run the utility to return it to default settings.
+*/
+
+table
+{
+	width:100%;
+	margin-top:2px;
+}
+
+thead, tr, td, tbody, table, th
+{
+	border:1px solid;
+}
+
+div
+{
+	width:100%;
+	margin-top:15px;
+}
+
+thead
+{
+	background-color:rgb(230,170,170);
+}
+
+tr.even
+{
+	background-color:rgb(190,190,190);
+}
+
+tr.odd
+{
+	background-color:rgb(170,170,230);
+}
+
+tr.index .first
+{
+    text-align: center;
+}
+
+tr.index td table
+{
+    margin: 0;
+    border: none;
+}
+
+div#container
+{
+	width:960px;
+	margin-left:auto;
+	margin-right:auto;
+}
+
+table.structure_head tbody tr, table#blender_header tbody tr
+{
+	background-color:rgb(190,190,190);
+}
+
+body
+{
+	background-color:rgb(230,230,230);
+}

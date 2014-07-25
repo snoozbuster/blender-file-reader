@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNADriver", "XNADriver\XNAD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderPipeline", "BlenderPipeline\BlenderPipeline.csproj", "{68F34F0B-1C5C-4CFD-8E2C-CCFB29ACA929}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XNAContent", "XNAContent\XNAContent.contentproj", "{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderTypes", "BlenderTypes\BlenderTypes.csproj", "{223C08DB-5E51-4D3C-A3D8-EAE0FC37E3FC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderFileBrowser", "BlenderFileBrowser\BlenderFileBrowser.csproj", "{33E32467-EAB6-47F1-92F6-DAF75546CADB}"
@@ -67,12 +65,6 @@ Global
 		{68F34F0B-1C5C-4CFD-8E2C-CCFB29ACA929}.Release|Mixed Platforms.Build.0 = Release|x86
 		{68F34F0B-1C5C-4CFD-8E2C-CCFB29ACA929}.Release|x86.ActiveCfg = Release|x86
 		{68F34F0B-1C5C-4CFD-8E2C-CCFB29ACA929}.Release|x86.Build.0 = Release|x86
-		{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{0071E8E1-B68B-4624-81EB-D5C2CDDFD149}.Release|x86.ActiveCfg = Debug|Any CPU
 		{223C08DB-5E51-4D3C-A3D8-EAE0FC37E3FC}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{223C08DB-5E51-4D3C-A3D8-EAE0FC37E3FC}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
 		{223C08DB-5E51-4D3C-A3D8-EAE0FC37E3FC}.Debug|Mixed Platforms.Build.0 = Debug|x86
