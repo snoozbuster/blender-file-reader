@@ -162,34 +162,34 @@ namespace XNADriver
             transparentModels = new List<BlenderModel>();
             currentLayer = 1;
 
-            PopulatedStructure curscene = file.GetStructuresByAddress(file.GetStructuresOfType("FileGlobal")[0]["curscene"].GetValueAsPointer())[0];
-            ulong next = curscene["base.first"].GetValueAsPointer();
+            PopulatedStructure curscene = file.GetStructuresOfType("FileGlobal")[0]["curscene"].Dereference()[0];
+            ulong next = curscene["base.first"].Value;
             while(next != 0)
             {
                 PopulatedStructure objBase = file.GetStructuresByAddress(next)[0];
-                PopulatedStructure obj = file.GetStructuresByAddress(objBase["object"].GetValueAsPointer())[0];
-                FieldInfo data = obj["data"];
-                int SDNAIndex = file.GetBlockByAddress(data.GetValueAsPointer()).SDNAIndex;
+                PopulatedStructure obj = objBase["object"].Dereference()[0];
+                IField data = obj["data"];
+                int SDNAIndex = file.GetBlockByAddress((data as Field<ulong>).Value).SDNAIndex;
                 while(file.StructureDNA.StructureList[SDNAIndex].StructureTypeName != "Mesh")
                 {
-                    ulong nextPointer = objBase["next"].GetValueAsPointer();
+                    ulong nextPointer = (objBase["next"] as Field<ulong>).Value;
                     if(nextPointer == 0)
                         return; // we've run out of objects in the list, and haven't found any meshes
 
                     objBase = file.GetStructuresByAddress(nextPointer)[0];
-                    obj = file.GetStructuresByAddress(objBase["object"].GetValueAsPointer())[0];
+                    obj = objBase["object"].Dereference()[0];
                     data = obj["data"];
-                    SDNAIndex = file.GetBlockByAddress(data.GetValueAsPointer()).SDNAIndex;
+                    SDNAIndex = file.GetBlockByAddress((data as Field<ulong>).Value).SDNAIndex;
                 }
 
-                PopulatedStructure mesh = file.GetStructuresByAddress(data.GetValueAsPointer())[0];
+                PopulatedStructure mesh = data.Dereference()[0];
                 BlenderModel model = new BlenderModel(mesh, obj, GraphicsDevice, file);
                 if(model.TextureHasTransparency)
                     transparentModels.Add(model);
                 else
                     models.Add(model);
 
-                next = objBase["next"].GetValueAsPointer();
+                next = (objBase["next"] as Field<ulong>).Value;
             }
         }
 

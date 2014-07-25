@@ -31,6 +31,8 @@ namespace XNADriver
 
         public BlenderModel(PopulatedStructure mesh, PopulatedStructure obj, GraphicsDevice GraphicsDevice, BlenderFile file)
         {
+            // If I was less sloppy, I would have used casts to generics instead of the raw dynamic Value on IField,
+            // but I'm lazy and this code is soon to go away anyway.
             if(defaultTex == null)
             {
                 defaultTex = new Texture2D(GraphicsDevice, 1, 1);
@@ -42,10 +44,10 @@ namespace XNADriver
             // both structures use the same vertex structure
             List<Vector3> verts = new List<Vector3>();
             List<short[]> unconvertedNormals = new List<short[]>();
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mvert"].GetValueAsPointer()))
+            foreach(PopulatedStructure s in mesh["mvert"].Dereference())
             {
-                float[] vector = s["co[3]"].GetValueAsFloatArray();
-                unconvertedNormals.Add(s["no[3]"].GetValueAsShortArray());
+                float[] vector = s["co"].Value;
+                unconvertedNormals.Add(s["no"].Value);
                 verts.Add(new Vector3(vector[0], vector[1], vector[2]));
             }
 
@@ -65,31 +67,31 @@ namespace XNADriver
                 normalVerts[i + 1] = new VertexPositionColor(verts[i / 2] + normals[i / 2] * 0.25f, Color.MidnightBlue);
             }
 
-            float[] posVector = obj["loc[3]"].GetValueAsFloatArray();
+            float[] posVector = obj["loc"].Value;
             this.Position = new Vector3(posVector[0], posVector[1], posVector[2]);
-            float[] scaleVector = obj["size[3]"].GetValueAsFloatArray();
+            float[] scaleVector = obj["size"].Value;
             this.Scale = new Vector3(scaleVector[0], scaleVector[1], scaleVector[2]);
-            float[] rotVector = obj["rot[3]"].GetValueAsFloatArray();
+            float[] rotVector = obj["rot"].Value;
             this.Rotation = Quaternion.CreateFromYawPitchRoll(rotVector[1], rotVector[0], rotVector[2]);
             this.Vertices = vertices;
             this.NormalVerts = normalVerts;
             this.VertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionNormalTexture.VertexDeclaration, this.Vertices.Length, BufferUsage.None);
             this.NormalBuffer = new VertexBuffer(GraphicsDevice, VertexPositionColor.VertexDeclaration, this.NormalVerts.Length, BufferUsage.None);
             this.Texture = texture;
-            this.Name = new string(obj["id.name[66]"].GetValueAsCharArray()).Split('\0')[0].Substring(2); // remove null term, remove first two characters
+            this.Name = new string(obj["id.name"].Value).Split('\0')[0].Substring(2); // remove null term, remove first two characters
 
             // LSB on represents layer 1, next bit is layer 2, etc
-            this.Layer = obj["lay"].GetValueAsInt();
+            this.Layer = obj["lay"].Value;
 
             // the "mat" field is a pointer to a pointer (technically, a pointer to an array of pointers)
             // I'm not sure what to do with multiple materials, so just use the first one
-            ulong blockaddr = mesh["mat"].GetValueAsPointer();
+            ulong blockaddr = mesh["mat"].Value;
             if(blockaddr != 0)
             {
                 PopulatedStructure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
-                this.TextureHasTransparency = mat["game.alpha_blend"].GetValueAsInt() != 0;
+                this.TextureHasTransparency = mat["game.alpha_blend"].Value != 0;
 
-                int mode = mat["mode"].GetValueAsInt();
+                int mode = mat["mode"].Value;
                 this.LightingEnabled = (mode & 4) == 0; // as far as I can tell, this is where "shadeless" is stored.
             }
             else
@@ -132,17 +134,17 @@ namespace XNADriver
             List<VertexPositionNormalTexture> output = new List<VertexPositionNormalTexture>();
 
             List<int[]> faces = new List<int[]>();
-            List<float[,]> tFaces = new List<float[,]>();
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mface"].GetValueAsPointer()))
-                faces.Add(new[] { s["v1"].GetValueAsInt(), s["v2"].GetValueAsInt(), s["v3"].GetValueAsInt(), s["v4"].GetValueAsInt() });
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mtface"].GetValueAsPointer()))
-                tFaces.Add((float[,])s["uv[4][2]"].GetValueAsMultidimensionalArray());
+            List<float[][]> tFaces = new List<float[][]>();
+            foreach(PopulatedStructure s in mesh["mface"].Dereference())
+                faces.Add(new int[] { s["v1"].Value, s["v2"].Value, s["v3"].Value, s["v4"].Value });
+            foreach(PopulatedStructure s in mesh["mtface"].Dereference())
+                tFaces.Add((float[][])s["uv"].Value);
 
             // assume all faces use same texture
-            PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtface"].GetValueAsPointer())[0]["tpage"].GetValueAsPointer())[0];
-            if(image["packedfile"].GetValueAsPointer() != 0)
+            PopulatedStructure image = mesh["mtface"].Dereference()[0]["tpage"].Dereference()[0];
+            if(image["packedfile"].Value != 0)
             {
-                byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsPointer())[0]["data"].GetValueAsPointer()).Data;
+                byte[] rawImage = file.GetBlockByAddress(image["packedfile"].Dereference()[0]["data"].Value).Data;
                 using(Stream s = new MemoryStream(rawImage))
                     texture = Texture2D.FromStream(GraphicsDevice, s);
             }
@@ -150,8 +152,8 @@ namespace XNADriver
             {
                 try
                 {
-                    string texturePath = image["name[1024]"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
-                    string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename[1024]"].ToString();
+                    string texturePath = image["name"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
+                    string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename"].ToString();
                     filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
                     using(Stream s = File.Open((filePath + texturePath).Replace("\'", ""), FileMode.Open, FileAccess.Read))
                         texture = Texture2D.FromStream(GraphicsDevice, s);
@@ -172,7 +174,7 @@ namespace XNADriver
                 {
                     faceVerts[i] = verts[face[i]];
                     faceVertNormals[i] = normals[face[i]];
-                    faceUVs[i] = new Vector2(tFaces[j][i, 0], tFaces[j][i, 1]);
+                    faceUVs[i] = new Vector2(tFaces[j][i][0], tFaces[j][i][1]);
                 }
                 j++;
 
@@ -193,43 +195,43 @@ namespace XNADriver
             List<VertexPositionNormalTexture> output = new List<VertexPositionNormalTexture>();
 
             List<Vector2> edges = new List<Vector2>(); // using x as index1 and y as index2
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["medge"].GetValueAsPointer()))
-                edges.Add(new Vector2(s["v1"].GetValueAsInt(), s["v2"].GetValueAsInt()));
+            foreach(PopulatedStructure s in mesh["medge"].Dereference())
+                edges.Add(new Vector2((s["v1"] as IField<int>).Value, (s["v2"] as IField<int>).Value));
             // a "loop" is a vertex index and an edge index. Groups of these are used to define a "poly", which is a face. 
             List<Vector2> loops = new List<Vector2>(); // using x as "v" and y as "e"
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloop"].GetValueAsPointer()))
-                loops.Add(new Vector2(s["v"].GetValueAsInt(), s["e"].GetValueAsInt()));
+            foreach(PopulatedStructure s in mesh["mloop"].Dereference())
+                loops.Add(new Vector2((s["v"] as IField<int>).Value, (s["e"] as IField<int>).Value));
             List<Vector2> uvLoops = null; // using x as u and y as v
             Vector2[] backupUVs = new[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0) }; // in case uvLoops is null
-            if(mesh["mloopuv"].GetValueAsPointer() != 0)
+            if(mesh["mloopuv"].Value != 0)
             {
                 uvLoops = new List<Vector2>();
-                foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mloopuv"].GetValueAsPointer()))
+                foreach(PopulatedStructure s in mesh["mloopuv"].Dereference())
                 {
-                    float[] uv = s["uv[2]"].GetValueAsFloatArray();
+                    float[] uv = s["uv"].Value;
                     uvLoops.Add(new Vector2(uv[0], uv[1]));
                 }
             }
             List<Vector2> polys = new List<Vector2>(); // using x as "loopstart" and y as "totloop" (loop length)
-            foreach(PopulatedStructure s in file.GetStructuresByAddress(mesh["mpoly"].GetValueAsPointer()))
-                polys.Add(new Vector2(s["loopstart"].GetValueAsInt(), s["totloop"].GetValueAsInt()));
+            foreach(PopulatedStructure s in mesh["mpoly"].Dereference())
+                polys.Add(new Vector2((s["loopstart"] as IField<int>).Value, (s["totloop"] as IField<int>).Value));
             // assume all faces use same texture for now
-            if(mesh["mtpoly"].GetValueAsPointer() != 0)
+            if(mesh["mtpoly"].Value != 0)
             {
                 try
                 {
                     // todo: sometimes this line fails, probably due to "assume all faces use same texture"
-                    PopulatedStructure image = file.GetStructuresByAddress(file.GetStructuresByAddress(mesh["mtpoly"].GetValueAsPointer())[0]["tpage"].GetValueAsPointer())[0];
-                    if(image["packedfile"].GetValueAsPointer() != 0)
+                    PopulatedStructure image = mesh["mtpoly"].Dereference()[0]["tpage"].Dereference()[0];
+                    if(image["packedfile"].Value != 0)
                     {
-                        byte[] rawImage = file.GetBlockByAddress(file.GetStructuresByAddress(image["packedfile"].GetValueAsPointer())[0]["data"].GetValueAsPointer()).Data;
+                        byte[] rawImage = file.GetBlockByAddress(image["packedfile"].Dereference()[0]["data"].Value).Data;
                         using(Stream s = new MemoryStream(rawImage))
                             texture = Texture2D.FromStream(GraphicsDevice, s);
                     }
                     else
                     {
-                        string texturePath = image["name[1024]"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
-                        string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename[1024]"].ToString();
+                        string texturePath = image["name"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
+                        string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename"].ToString();
                         filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
                         using(Stream s = File.Open((filePath + texturePath).Replace("\'", ""), FileMode.Open, FileAccess.Read))
                             texture = Texture2D.FromStream(GraphicsDevice, s);

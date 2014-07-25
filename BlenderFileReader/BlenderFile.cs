@@ -133,7 +133,7 @@ namespace BlenderFileReader
             int blocksParsed = 0;
             foreach(FileBlock b in fileBlocks)
             {
-                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize, blocksParsed++, RawBlockMessages);
+                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize, blocksParsed++, this);
                 if(temp != null)
                     structures.Add(b.OldMemoryAddress, temp);
             }
@@ -151,7 +151,7 @@ namespace BlenderFileReader
         {
             List<PopulatedStructure> output = new List<PopulatedStructure>();
             Structures.ForEach(array => {
-                output.AddRange(array.Where(structure => { return structure.Type == typeName; }));
+                output.AddRange(array.Where(structure => { return structure.TypeName == typeName; }));
             });
             return output.ToArray();
         }

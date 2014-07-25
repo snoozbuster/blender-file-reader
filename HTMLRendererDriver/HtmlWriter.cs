@@ -65,10 +65,10 @@ namespace HTMLRendererDriver
             {
                 int index = 0;
                 bool outer_odd = true;
-                writeStartTag(writer, "div", "class=\"structure " + block[0].Type + (block.Length > 1 ? " list" : "") + "\"");
+                writeStartTag(writer, "div", "class=\"structure " + block[0].TypeName + (block.Length > 1 ? " list" : "") + "\"");
                 writeTable(writer, new[] { "structure_head" },
                     new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)),
-                    false, new[] { block[0].Type + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].FlattenedData.Count.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)) });
+                    false, new[] { block[0].TypeName + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].NumFields.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)) });
                 if(block.Length > 1)
                 {
                     writeStartTag(writer, "table", "class=\"structure_body\"");
@@ -90,7 +90,7 @@ namespace HTMLRendererDriver
 
                     writeStartTag(writer, "table", "class=\"structure_body\"");
                     writeTableHead(writer, new[] { "Field No.", "Identifier", "Parent Object Type", "Field Type", "Field Size", "Field Value" });
-                    foreach(FieldInfo field in s.FlattenedData)
+                    foreach(IField field in s)
                     {
                         writeField(writer, field, odd, fieldNumber++);
                         odd = !odd;
@@ -122,7 +122,7 @@ namespace HTMLRendererDriver
             writeEndTag(writer);
         }
 
-        private void writeField(StreamWriter writer, FieldInfo field, bool odd, int fieldNumber)
+        private void writeField(StreamWriter writer, IField field, bool odd, int fieldNumber)
         {
             string fieldVal = field.ToString();
             if(field.IsPointer)
@@ -154,7 +154,7 @@ namespace HTMLRendererDriver
                         if(field.IsPointerToPointer)
                         {
                             fieldVal += " (pointer to pointer array: ";
-                            FileBlock pointed = parsedFile.GetBlockByAddress(field.GetValueAsPointer());
+                            FileBlock pointed = parsedFile.GetBlockByAddress((field as Field<ulong>).Value); // this is probably a safe cast
                             if(pointed != null && pointed.Size % parsedFile.PointerSize == 0) // probably a pointer
                             {
                                 ulong[] pointers = new ulong[pointed.Size / parsedFile.PointerSize];
@@ -170,23 +170,22 @@ namespace HTMLRendererDriver
                                 fieldVal += "{ " + string.Join(", ", temp) + " })";
                             }
                             else
-                                fieldVal += "...but target doesn't look like a pointer array)";
+                                fieldVal += "...but target doesn't look like a pointer array)"; // probably will crash instead of getting to this
                         }
                     }
-                }
-                        
+                }   
             }
 
-            string typeName = field.TypeName + (field.IsArray ? (field.IsMultidimensional ? "[]" : "") + "[]" : "");
-            if(!field.IsArray && field.IsPointer && field.Type != typeof(FieldInfo) && field.GetValueAsPointerString() != "0x0")
+            string typeName = field.TypeName + (field.IsArray ? (field.Is2DArray ? "[]" : "") + "[]" : "");
+            if(!field.IsArray && field.IsPointer && field.IsPrimitive && (field as Field<ulong>).Value != 0)
             {
-                FileBlock associatedBlock = parsedFile.GetBlockByAddress(field.GetValueAsPointer());
+                FileBlock associatedBlock = parsedFile.GetBlockByAddress((field as Field<ulong>).Value);
                 if(associatedBlock != null)
                     typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
                         parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";
             }
 
-            writeTableRow(odd ? "odd" : "even", writer, fieldNumber.ToString(), field.Name, field.ParentType, typeName, field.Length > 1 ? field.Size + " * " + field.Length + " (" + (field.Size * field.Length) + ")" : (field.Size * field.Length).ToString(), fieldVal);
+            writeTableRow(odd ? "odd" : "even", writer, fieldNumber.ToString(), field.FullyQualifiedName, field.Parent.Parent == null ? "(this)" : field.ParentType, typeName, field.Length > 1 ? field.Size + " * " + field.Length + " (" + (field.Size * field.Length) + ")" : field.Size.ToString(), fieldVal);
         }
 
         private void writeBodyHead(StreamWriter writer)
@@ -290,6 +289,16 @@ namespace HTMLRendererDriver
         private void writeLine(StreamWriter writer, string text)
         {
             writer.WriteLine(tabs + text);
+        }
+
+        private string getValueAsPointerString(Field<ulong> pointer)
+        {
+            return pointer.Value.ToString("X" + (pointer.Size * 2));
+        }
+
+        private string getValueAsPointerArray(Field<ulong[]> pointerArray)
+        {
+            return "{ " + string.Join(", ", pointerArray.Value.Select(s => s.ToString("X" + (pointerArray.Size * 2)))) + " }";
         }
 
         // I dislike this function because I can't make it nice and formatted.
