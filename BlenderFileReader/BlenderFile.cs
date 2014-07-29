@@ -158,12 +158,13 @@ namespace BlenderFileReader
 
         /// <summary>
         /// Gets an array of PopulatedStructures by their containing FileBlock's old memory address.
+        /// Returns null if address isn't found.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="address">Address to look up.</param>
         /// <returns></returns>
         public PopulatedStructure[] GetStructuresByAddress(ulong address)
         {
-            return memoryMap[address];
+            return memoryMap.ContainsKey(address) ? memoryMap[address] : null;
         }
 
         /// <summary>
