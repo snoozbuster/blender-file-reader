@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -8,8 +9,13 @@ namespace BlenderFileReader
     /// <summary>
     /// Represents a SDNA structure filled with data.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")] // nq means "no quotes", without it the value returned by DebuggerDisplay will be quoted.
     public class PopulatedStructure : IStructField, IEnumerable<IField>
     {
+        // this string is hidden from the debugger, but used as the display string for the field instead of ToString().
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay { get { return string.Format("{0}: [{1} field{2}]", Name == TypeName ? TypeName : "\"" + Name + "\" (type " + TypeName + ")", NumFields, NumFields == 1 ? "" : "s"); } }
+
         /// <summary>
         /// Parses a file block. If the file block is SDNA or another block with block.count == 0, it will return null.
         /// </summary>

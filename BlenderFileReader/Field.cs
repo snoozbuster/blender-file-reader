@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,7 @@ namespace BlenderFileReader
     /// <summary>
     /// Holds field info for a primitive field.
     /// </summary>
+    [DebuggerDisplay("{FullyQualifiedName}: {ToString(),nq}")] // nq means "no quotes", without it the value returned by ToString() will be quoted.
     public class Field<T> : IField<T>
     {
         /// <summary>
@@ -36,7 +38,7 @@ namespace BlenderFileReader
             {
                 string name = Name;
                 IField parent = Parent;
-                while(parent.Parent != null) // stop before adding name of "root" structure
+                while(parent.Parent != null) // stop before adding name of "root" structure, which will just be the name of its type
                 {
                     name = parent.Name + "." + name;
                     parent = parent.Parent;
