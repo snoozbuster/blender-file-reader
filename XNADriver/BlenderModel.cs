@@ -29,7 +29,7 @@ namespace XNADriver
 
         protected GraphicsDevice GraphicsDevice;
 
-        public BlenderModel(PopulatedStructure mesh, PopulatedStructure obj, GraphicsDevice GraphicsDevice, BlenderFile file)
+        public BlenderModel(Structure mesh, Structure obj, GraphicsDevice GraphicsDevice, BlenderFile file)
         {
             // If I was less sloppy, I would have used casts to generics instead of the raw dynamic Value on IField,
             // but I'm lazy and this code is soon to go away anyway.
@@ -44,7 +44,7 @@ namespace XNADriver
             // both structures use the same vertex structure
             List<Vector3> verts = new List<Vector3>();
             List<short[]> unconvertedNormals = new List<short[]>();
-            foreach(PopulatedStructure s in mesh["mvert"].Dereference())
+            foreach(Structure s in mesh["mvert"].Dereference())
             {
                 float[] vector = s["co"].Value;
                 unconvertedNormals.Add(s["no"].Value);
@@ -88,7 +88,7 @@ namespace XNADriver
             ulong blockaddr = mesh["mat"].Value;
             if(blockaddr != 0)
             {
-                PopulatedStructure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
+                Structure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
                 this.TextureHasTransparency = mat["game.alpha_blend"].Value != 0;
 
                 int mode = mat["mode"].Value;
@@ -125,7 +125,7 @@ namespace XNADriver
             return normals;
         }
 
-        private VertexPositionNormalTexture[] loadOldModel(BlenderFile file, PopulatedStructure mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
+        private VertexPositionNormalTexture[] loadOldModel(BlenderFile file, Structure mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
         {
             // I believe this function has a bug when used on a mesh that has unconnected chunks of vertices;
             // however the only file I currently have that exhibits this problem decompresses to 240MB when I use the HTML
@@ -135,13 +135,13 @@ namespace XNADriver
 
             List<int[]> faces = new List<int[]>();
             List<float[][]> tFaces = new List<float[][]>();
-            foreach(PopulatedStructure s in mesh["mface"].Dereference())
+            foreach(Structure s in mesh["mface"].Dereference())
                 faces.Add(new int[] { s["v1"].Value, s["v2"].Value, s["v3"].Value, s["v4"].Value });
-            foreach(PopulatedStructure s in mesh["mtface"].Dereference())
+            foreach(Structure s in mesh["mtface"].Dereference())
                 tFaces.Add((float[][])s["uv"].Value);
 
             // assume all faces use same texture
-            PopulatedStructure image = mesh["mtface"].Dereference()[0]["tpage"].Dereference()[0];
+            Structure image = mesh["mtface"].Dereference()[0]["tpage"].Dereference()[0];
             if(image["packedfile"].Value != 0)
             {
                 byte[] rawImage = file.GetBlockByAddress(image["packedfile"].Dereference()[0]["data"].Value).Data;
@@ -190,30 +190,30 @@ namespace XNADriver
             return output.ToArray();
         }
 
-        private VertexPositionNormalTexture[] loadNewModel(BlenderFile file, PopulatedStructure mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
+        private VertexPositionNormalTexture[] loadNewModel(BlenderFile file, Structure mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
         {
             List<VertexPositionNormalTexture> output = new List<VertexPositionNormalTexture>();
 
             List<Vector2> edges = new List<Vector2>(); // using x as index1 and y as index2
-            foreach(PopulatedStructure s in mesh["medge"].Dereference())
+            foreach(Structure s in mesh["medge"].Dereference())
                 edges.Add(new Vector2((s["v1"] as IField<int>).Value, (s["v2"] as IField<int>).Value));
             // a "loop" is a vertex index and an edge index. Groups of these are used to define a "poly", which is a face. 
             List<Vector2> loops = new List<Vector2>(); // using x as "v" and y as "e"
-            foreach(PopulatedStructure s in mesh["mloop"].Dereference())
+            foreach(Structure s in mesh["mloop"].Dereference())
                 loops.Add(new Vector2((s["v"] as IField<int>).Value, (s["e"] as IField<int>).Value));
             List<Vector2> uvLoops = null; // using x as u and y as v
             Vector2[] backupUVs = new[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0) }; // in case uvLoops is null
             if(mesh["mloopuv"].Value != 0)
             {
                 uvLoops = new List<Vector2>();
-                foreach(PopulatedStructure s in mesh["mloopuv"].Dereference())
+                foreach(Structure s in mesh["mloopuv"].Dereference())
                 {
                     float[] uv = s["uv"].Value;
                     uvLoops.Add(new Vector2(uv[0], uv[1]));
                 }
             }
             List<Vector2> polys = new List<Vector2>(); // using x as "loopstart" and y as "totloop" (loop length)
-            foreach(PopulatedStructure s in mesh["mpoly"].Dereference())
+            foreach(Structure s in mesh["mpoly"].Dereference())
                 polys.Add(new Vector2((s["loopstart"] as IField<int>).Value, (s["totloop"] as IField<int>).Value));
             // assume all faces use same texture for now
             if(mesh["mtpoly"].Value != 0)
@@ -221,7 +221,7 @@ namespace XNADriver
                 try
                 {
                     // todo: sometimes this line fails, probably due to "assume all faces use same texture"
-                    PopulatedStructure image = mesh["mtpoly"].Dereference()[0]["tpage"].Dereference()[0];
+                    Structure image = mesh["mtpoly"].Dereference()[0]["tpage"].Dereference()[0];
                     if(image["packedfile"].Value != 0)
                     {
                         byte[] rawImage = file.GetBlockByAddress(image["packedfile"].Dereference()[0]["data"].Value).Data;

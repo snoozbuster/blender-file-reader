@@ -6,16 +6,16 @@ namespace BlenderFileReader
     /// <summary>
     /// Represents a structure as defined by SDNA. 
     /// </summary>
-    public struct SDNAStructure
+    public struct StructureDefinition
     {
-        private List<BlenderField> fieldDictionary;
+        private List<FieldDefinition> fieldDictionary;
         private short structureIndexType;
         private StructureDNA sdna;
 
         /// <summary>
         /// Type (as defined by SDNA) of the structure.
         /// </summary>
-        public BlenderType StructureType { get { return sdna.TypeList[structureIndexType]; } }
+        public TypeDefinition StructureType { get { return sdna.TypeList[structureIndexType]; } }
         /// <summary>
         /// Name of the structure's type (shortcut to StructureType.Name).
         /// </summary>
@@ -27,7 +27,7 @@ namespace BlenderFileReader
         /// <summary>
         /// List of fields in the structure.
         /// </summary>
-        public List<BlenderField> FieldList { get { return new List<BlenderField>(fieldDictionary); } }
+        public List<FieldDefinition> FieldList { get { return new List<FieldDefinition>(fieldDictionary); } }
 
         private bool isInitialized;
 
@@ -36,7 +36,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="structureType">Index in SDNA.TypeList of the structure type.</param>
         /// <param name="fieldDict">List of fields in the structure.</param>
-        public SDNAStructure(short structureType, List<BlenderField> fieldDict, StructureDNA sdna)
+        public StructureDefinition(short structureType, List<FieldDefinition> fieldDict, StructureDNA sdna)
         {
             fieldDictionary = fieldDict;
             structureIndexType = structureType;
@@ -56,7 +56,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("Already initialized.");
             isInitialized = true;
 
-            foreach(BlenderField f in fieldDictionary)
+            foreach(FieldDefinition f in fieldDictionary)
                 if(!f.IsPointer)
                     f.InitializeStructure();
         }

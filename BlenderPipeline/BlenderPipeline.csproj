@@ -33,6 +33,7 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Xna.Framework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=842cf8be1de50553, processorArchitecture=x86">
       <SpecificVersion>True</SpecificVersion>
     </Reference>
@@ -54,9 +55,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlenderImporter.cs" />
-    <Compile Include="BlenderReader.cs" />
-    <Compile Include="BlenderWriter.cs" />
     <Compile Include="BlenderProcessor.cs" />
+    <Compile Include="ContentTypes\BlenderObjectContent.cs" />
+    <Compile Include="ContentTypes\BlendFileContent.cs" />
+    <Compile Include="ContentTypes\MaterialContent.cs" />
+    <Compile Include="ContentTypes\MeshContent.cs" />
+    <Compile Include="ContentTypes\SceneContent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

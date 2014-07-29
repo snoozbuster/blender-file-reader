@@ -5,7 +5,7 @@ namespace BlenderFileReader
     /// <summary>
     /// A type as defined by SDNA.
     /// </summary>
-    public struct BlenderType
+    public struct TypeDefinition
     {
         /// <summary>
         /// Name of the type.
@@ -25,7 +25,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="name">Name of the type.</param>
         /// <param name="size">Size of the type in bytes.</param>
-        public BlenderType(string name, short size, StructureDNA s)
+        public TypeDefinition(string name, short size, StructureDNA s)
         {
             Name = name;
             Size = size;

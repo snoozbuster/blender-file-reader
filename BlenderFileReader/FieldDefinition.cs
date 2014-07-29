@@ -6,7 +6,7 @@ namespace BlenderFileReader
     /// <summary>
     /// A field of a structure as defined by SDNA.
     /// </summary>
-    public struct BlenderField
+    public struct FieldDefinition
     {
         /// <summary>
         /// Name of the field.
@@ -15,7 +15,7 @@ namespace BlenderFileReader
         /// <summary>
         /// Type (as defined by SDNA) of the field.
         /// </summary>
-        public readonly BlenderType Type;
+        public readonly TypeDefinition Type;
 
         /// <summary>
         /// Shortcut to Type.IsPrimitive; indicates if the field is a structure.
@@ -32,8 +32,8 @@ namespace BlenderFileReader
         /// </summary>
         public bool IsArray { get { return Name.Contains('['); } }
 
-        public SDNAStructure Structure { get { if(IsPrimitive) throw new InvalidOperationException(Name + " is a primitive and does not have an SDNAStructure."); if(structure == null) InitializeStructure(); return structure.Value; } }
-        private SDNAStructure? structure;
+        public StructureDefinition Structure { get { if(IsPrimitive) throw new InvalidOperationException(Name + " is a primitive and does not have an SDNAStructure."); if(structure == null) InitializeStructure(); return structure.Value; } }
+        private StructureDefinition? structure;
         private bool isInitialized;
 
         private StructureDNA sdna;
@@ -43,7 +43,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="name">Name of the field.</param>
         /// <param name="type">Type (as defined by SDNA) of the field.</param>
-        public BlenderField(string name, BlenderType type, StructureDNA sdna)
+        public FieldDefinition(string name, TypeDefinition type, StructureDNA sdna)
         {
             Name = name;
             Type = type;
@@ -57,7 +57,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="nameIndex">Index of SDNA.NameList containing the name of the field.</param>
         /// <param name="typeIndex">Index of SDNA.TypeList containing the type of the field.</param>
-        public BlenderField(short nameIndex, short typeIndex, StructureDNA sdna)
+        public FieldDefinition(short nameIndex, short typeIndex, StructureDNA sdna)
         {
             Name = sdna.NameList[nameIndex];
             Type = sdna.TypeList[typeIndex];

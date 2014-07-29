@@ -17,7 +17,7 @@ namespace BlenderFileReader
         /// <summary>
         /// List of all the types and their sizes contained in SDNA.
         /// </summary>
-        public List<BlenderType> TypeList { get; private set; }
+        public List<TypeDefinition> TypeList { get; private set; }
         /// <summary>
         /// List of all the names of the types in SDNA; used primarily for BlenderType and BlenderField's constructors.
         /// </summary>
@@ -25,7 +25,7 @@ namespace BlenderFileReader
         /// <summary>
         /// List of all structures defined in SDNA.
         /// </summary>
-        public List<SDNAStructure> StructureList { get; private set; }
+        public List<StructureDefinition> StructureList { get; private set; }
         /// <summary>
         /// List of all of the structures' types by index in TypeList/TypeNameList; used primarily for BlenderType and BlenderField's constructors.
         /// </summary>
@@ -57,24 +57,24 @@ namespace BlenderFileReader
             position = readStructures(position, out numberOfStructures, out structureFields);
 
             // now that we've read out everything we'll need, create the objects
-            TypeList = new List<BlenderType>();
+            TypeList = new List<TypeDefinition>();
             for(int i = 0; i < numberOfTypes; i++)
-                TypeList.Add(new BlenderType(TypeNameList[i], typeLengthList[i], this));
+                TypeList.Add(new TypeDefinition(TypeNameList[i], typeLengthList[i], this));
 
-            StructureList = new List<SDNAStructure>(numberOfStructures);
+            StructureList = new List<StructureDefinition>(numberOfStructures);
             for(int i = 0; i < numberOfStructures; i++)
             {
-                List<BlenderField> fields = new List<BlenderField>();
+                List<FieldDefinition> fields = new List<FieldDefinition>();
                 for(int j = 0; j < structureFields[i].Count; j++)
                 {
                     KeyValuePair<short, short> element = structureFields[i].ElementAt(j);
-                    fields.Add(new BlenderField(element.Key, element.Value, this));
+                    fields.Add(new FieldDefinition(element.Key, element.Value, this));
                 }
-                StructureList.Add(new SDNAStructure(StructureTypeIndices[i], fields, this));
+                StructureList.Add(new StructureDefinition(StructureTypeIndices[i], fields, this));
             }
 
             // finish lazy initialization of the structures
-            foreach(SDNAStructure s in StructureList)
+            foreach(StructureDefinition s in StructureList)
                 s.InitializeFields();
         }
 

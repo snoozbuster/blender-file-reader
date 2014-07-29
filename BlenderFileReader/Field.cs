@@ -140,7 +140,7 @@ namespace BlenderFileReader
             }
 
             // not found means primitive
-            IsPrimitive = (parent as PopulatedStructure).ContainingFile.StructureDNA.StructureTypeIndices.IndexOf((short)(parent as PopulatedStructure).ContainingFile.StructureDNA.TypeNameList.IndexOf(type)) == -1;
+            IsPrimitive = (parent as Structure).ContainingFile.StructureDNA.StructureTypeIndices.IndexOf((short)(parent as Structure).ContainingFile.StructureDNA.TypeNameList.IndexOf(type)) == -1;
 
             Name = name.Split('[')[0]; // get rid of array leftovers
             Parent = parent;
@@ -155,7 +155,7 @@ namespace BlenderFileReader
         /// returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
         /// </summary>
         /// <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
-        public PopulatedStructure[] Dereference()
+        public Structure[] Dereference()
         {
             if(!IsPointer)
                 throw new InvalidOperationException("This field is not a pointer.");
@@ -165,7 +165,7 @@ namespace BlenderFileReader
                 throw new InvalidOperationException("This is an array of pointers. Use DereferenceAsArray().");
 
             ulong address = (ulong)Convert.ChangeType(Value, typeof(ulong));
-            return address == 0 ? null : (Parent as PopulatedStructure).ContainingFile.GetStructuresByAddress(address);
+            return address == 0 ? null : (Parent as Structure).ContainingFile.GetStructuresByAddress(address);
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace BlenderFileReader
         /// If the field is a pointer to a pointer, throws InvalidDataException.
         /// </summary>
         /// <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
-        public PopulatedStructure[][] DereferenceAsArray()
+        public Structure[][] DereferenceAsArray()
         {
             if(!IsPointer)
                 throw new InvalidOperationException("This field is not a pointer.");
@@ -185,9 +185,9 @@ namespace BlenderFileReader
 
             // have to use dynamic here too
             dynamic addresses = Value;
-            PopulatedStructure[][] output = new PopulatedStructure[addresses.Length][];
+            Structure[][] output = new Structure[addresses.Length][];
             for(int i = 0; i < output.Length; i++)
-                output[i] = addresses[i] == 0 ? null : (Parent as PopulatedStructure).ContainingFile.GetStructuresByAddress(addresses[i]);
+                output[i] = addresses[i] == 0 ? null : (Parent as Structure).ContainingFile.GetStructuresByAddress(addresses[i]);
             return output;
         }
 

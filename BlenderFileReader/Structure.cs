@@ -10,7 +10,7 @@ namespace BlenderFileReader
     /// Represents a SDNA structure filled with data.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")] // nq means "no quotes", without it the value returned by DebuggerDisplay will be quoted.
-    public class PopulatedStructure : IStructField, IEnumerable<IField>
+    public class Structure : IStructField, IEnumerable<IField>
     {
         // this string is hidden from the debugger, but used as the display string for the field instead of ToString().
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -21,7 +21,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="block">The block to parse.</param>
         /// <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
-        public static PopulatedStructure[] ParseFileBlock(FileBlock block, StructureDNA sdna, int pointerSize, int blocksParsed, BlenderFile file)
+        public static Structure[] ParseFileBlock(FileBlock block, StructureDNA sdna, int pointerSize, int blocksParsed, BlenderFile file)
         {
             if(block.Count == 0 || block.Code == "DNA1")
                 return null;
@@ -34,7 +34,7 @@ namespace BlenderFileReader
                 return null;
             }
 
-            PopulatedStructure[] output = new PopulatedStructure[block.Count];
+            Structure[] output = new Structure[block.Count];
 
             if(block.Count > 1)
                 for(int i = 0; i < block.Count; i++)
@@ -42,14 +42,14 @@ namespace BlenderFileReader
                     byte[] data = new byte[block.Size / block.Count];
                     for(int j = 0; j < block.Size / block.Count; j++)
                         data[j] = block.Data[i * (block.Size / block.Count) + j];
-                    output[i] = new PopulatedStructure(data, sdna.StructureList[block.SDNAIndex], file);
+                    output[i] = new Structure(data, sdna.StructureList[block.SDNAIndex], file);
                     output[i].Size = sdna.StructureList[block.SDNAIndex].StructureTypeSize;
                     output[i].TypeName = sdna.StructureList[block.SDNAIndex].StructureTypeName;
                     output[i].ContainingBlock = block;
                 }
             else
             {
-                output[0] = new PopulatedStructure(block.Data, sdna.StructureList[block.SDNAIndex], file);
+                output[0] = new Structure(block.Data, sdna.StructureList[block.SDNAIndex], file);
                 output[0].Size = sdna.StructureList[block.SDNAIndex].StructureTypeSize;
                 output[0].TypeName = sdna.StructureList[block.SDNAIndex].StructureTypeName;
                 output[0].ContainingBlock = block;
@@ -75,10 +75,10 @@ namespace BlenderFileReader
         {
             get
             {
-                PopulatedStructure temp;
+                Structure temp;
                 int total = 0;
                 foreach(IField f in this)
-                    if((temp = f as PopulatedStructure) != null)
+                    if((temp = f as Structure) != null)
                         total += temp.NumFields;
                     else
                         total++;
@@ -166,7 +166,7 @@ namespace BlenderFileReader
         private int pointerSize { get { return ContainingFile.PointerSize; } }
 
         // root structure constructor
-        protected PopulatedStructure(byte[] data, SDNAStructure template, BlenderFile file)
+        protected Structure(byte[] data, StructureDefinition template, BlenderFile file)
         {
             // since this is a root structure, set its name to the type name (as an identification) and
             // Value to the type name (as expected by IField)
@@ -183,7 +183,7 @@ namespace BlenderFileReader
         }
         
         // embedded structure constructor, called by parseStructureFields
-        private PopulatedStructure(byte[] data, SDNAStructure template, string name, PopulatedStructure parent)
+        private Structure(byte[] data, StructureDefinition template, string name, Structure parent)
             :this(data, template, parent.ContainingFile)
         {
             Name = name;
@@ -196,9 +196,9 @@ namespace BlenderFileReader
         /// <param name="toParse">Structure to parse the fields of.</param>
         /// <param name="data">Data to input into fields.</param>
         /// <param name="position">Position of index in data.</param>
-        private void parseStructureFields(PopulatedStructure parent, SDNAStructure toParse, byte[] data, ref List<IField> fields, ref int position)
+        private void parseStructureFields(Structure parent, StructureDefinition toParse, byte[] data, ref List<IField> fields, ref int position)
         {
-            foreach(BlenderField f in toParse.FieldList)
+            foreach(FieldDefinition f in toParse.FieldList)
                 if(f.IsPointer) // it's almost a primitive
                 {
                     if(f.IsArray)
@@ -265,7 +265,7 @@ namespace BlenderFileReader
 
                         if(f.Name.Count(v => v == '[') == 1)
                             for(int i = 0; i < getIntFromArrayName(f.Name); i++)
-                                fields.Add(new PopulatedStructure(subArray(data, i * f.Type.Size, f.Type.Size), f.Structure, f.Name.Split('[')[0] + "[" + i + "]", parent));
+                                fields.Add(new Structure(subArray(data, i * f.Type.Size, f.Type.Size), f.Structure, f.Name.Split('[')[0] + "[" + i + "]", parent));
                         else
                         {
                             // multidimensional arrays of non-primitives, can it get worse?
@@ -281,7 +281,7 @@ namespace BlenderFileReader
                     }
                     else
                     {
-                        fields.Add(new PopulatedStructure(subArray(data, position, f.Structure.StructureTypeSize), f.Structure, f.Name.Split('[')[0], parent));
+                        fields.Add(new Structure(subArray(data, position, f.Structure.StructureTypeSize), f.Structure, f.Name.Split('[')[0], parent));
                         position += f.Structure.StructureTypeSize;
                     }
                 }
@@ -482,7 +482,7 @@ namespace BlenderFileReader
         /// returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
         /// </summary>
         /// <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
-        public PopulatedStructure[] Dereference()
+        public Structure[] Dereference()
         {
             throw new InvalidOperationException("This field is not a pointer.");
         }
@@ -493,7 +493,7 @@ namespace BlenderFileReader
         /// If the field is a pointer to a pointer, throws InvalidDataException.
         /// </summary>
         /// <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
-        public PopulatedStructure[][] DereferenceAsArray()
+        public Structure[][] DereferenceAsArray()
         {
             throw new InvalidOperationException("This field is not a pointer.");
         }
@@ -504,9 +504,9 @@ namespace BlenderFileReader
         /// <returns></returns>
         public IEnumerator<IField> GetEnumerator()
         {
-            PopulatedStructure p;
+            Structure p;
             foreach(IField field in Fields)
-                if((p = field as PopulatedStructure) != null)
+                if((p = field as Structure) != null)
                     foreach(IField inner in p)
                         yield return inner;
                 else

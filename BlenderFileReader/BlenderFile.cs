@@ -23,7 +23,7 @@ namespace BlenderFileReader
         /// <summary>
         /// List of arrays of PopulatedStructures created from parsing a FileBlock. 
         /// </summary>
-        public List<PopulatedStructure[]> Structures { get; private set; }
+        public List<Structure[]> Structures { get; private set; }
 
         /// <summary>
         /// A reference to the parsed structure DNA for this file.
@@ -43,7 +43,7 @@ namespace BlenderFileReader
         public string SourceFilename { get; private set; }
 
         private List<FileBlock> fileBlocks = new List<FileBlock>();
-        private Dictionary<ulong, PopulatedStructure[]> memoryMap = new Dictionary<ulong, PopulatedStructure[]>();
+        private Dictionary<ulong, Structure[]> memoryMap = new Dictionary<ulong, Structure[]>();
 
         /// <summary>
         /// Creates a new parsed <pre>BlenderFile</pre> from a filepath.
@@ -127,13 +127,13 @@ namespace BlenderFileReader
         /// Parses the file blocks to create a map of memory addresses to populated structures.
         /// </summary>
         /// <returns>A dictionary mapping memory addresses to the structures held in the corresponding file block.</returns>
-        private Dictionary<ulong, PopulatedStructure[]> createStructures()
+        private Dictionary<ulong, Structure[]> createStructures()
         {
-            Dictionary<ulong, PopulatedStructure[]> structures = new Dictionary<ulong, PopulatedStructure[]>();
+            Dictionary<ulong, Structure[]> structures = new Dictionary<ulong, Structure[]>();
             int blocksParsed = 0;
             foreach(FileBlock b in fileBlocks)
             {
-                PopulatedStructure[] temp = PopulatedStructure.ParseFileBlock(b, StructureDNA, PointerSize, blocksParsed++, this);
+                Structure[] temp = Structure.ParseFileBlock(b, StructureDNA, PointerSize, blocksParsed++, this);
                 if(temp != null)
                     structures.Add(b.OldMemoryAddress, temp);
             }
@@ -147,9 +147,9 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="typeName">Name of the type you want to find.</param>
         /// <returns>Array of all PopulatedStructures of that type.</returns>
-        public PopulatedStructure[] GetStructuresOfType(string typeName)
+        public Structure[] GetStructuresOfType(string typeName)
         {
-            List<PopulatedStructure> output = new List<PopulatedStructure>();
+            List<Structure> output = new List<Structure>();
             Structures.ForEach(array => {
                 output.AddRange(array.Where(structure => { return structure.TypeName == typeName; }));
             });
@@ -162,7 +162,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="address">Address to look up.</param>
         /// <returns></returns>
-        public PopulatedStructure[] GetStructuresByAddress(ulong address)
+        public Structure[] GetStructuresByAddress(ulong address)
         {
             return memoryMap.ContainsKey(address) ? memoryMap[address] : null;
         }

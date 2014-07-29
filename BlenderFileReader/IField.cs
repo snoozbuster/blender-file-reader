@@ -82,7 +82,7 @@ namespace BlenderFileReader
         /// returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
         /// </summary>
         /// <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
-        PopulatedStructure[] Dereference();
+        Structure[] Dereference();
 
         /// <summary>
         /// If the represented field is an array of pointers, dereferences them and returns an array of references.
@@ -90,7 +90,7 @@ namespace BlenderFileReader
         /// If the field is a pointer to a pointer, throws InvalidDataException.
         /// </summary>
         /// <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
-        PopulatedStructure[][] DereferenceAsArray();
+        Structure[][] DereferenceAsArray();
     }
 
     /// <summary>

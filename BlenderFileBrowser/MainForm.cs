@@ -77,7 +77,7 @@ namespace BlenderFileBrowser
             fileTree.Nodes.Clear();
             fileTree.ShowRootLines = true;
             fileTree.BeginUpdate();
-            foreach(PopulatedStructure[] structure in loadedFile.Structures)
+            foreach(Structure[] structure in loadedFile.Structures)
                 fileTree.Nodes.Add(loadNode(structure));
             TreeNode rawBlocks = new TreeNode("[Raw data blocks]");
             foreach(string s in loadedFile.RawBlockMessages)
@@ -86,7 +86,7 @@ namespace BlenderFileBrowser
             fileTree.EndUpdate();
         }
 
-        private TreeNode loadNode(PopulatedStructure[] structure)
+        private TreeNode loadNode(Structure[] structure)
         {
             string pointerData = " (at 0x" + structure[0].ContainingBlock.OldMemoryAddress.ToString("X" + loadedFile.PointerSize * 2) + ")";
             string typeName = structure[0].TypeName;
@@ -101,7 +101,7 @@ namespace BlenderFileBrowser
             {
                 root.Tag = structure;
                 int i = 0;
-                foreach(PopulatedStructure s in structure)
+                foreach(Structure s in structure)
                 {
                     TreeNode output = new TreeNode("[" + i++ + "]: " + s.Name + " (type: " + s.TypeName + ")");
                     output.Tag = structure;
@@ -118,7 +118,7 @@ namespace BlenderFileBrowser
             return root;
         }
 
-        private TreeNode parseStructure(PopulatedStructure structure)
+        private TreeNode parseStructure(Structure structure)
         {
             TreeNode output = new TreeNode(structure.Name + " (type: " + structure.TypeName + ")");
             output.Tag = structure;
@@ -128,12 +128,12 @@ namespace BlenderFileBrowser
 
         // instead of returning a tree node, adds the stuff to the supplied node
         // turns out this version is more useful
-        private void parseStructure(ref TreeNode node, PopulatedStructure structure)
+        private void parseStructure(ref TreeNode node, Structure structure)
         {
             // since I don't want to flatten the structure during iteration, iterate over structure.Fields
-            PopulatedStructure s;
+            Structure s;
             foreach(IField field in structure.Fields)
-                if((s = field as PopulatedStructure) != null)
+                if((s = field as Structure) != null)
                     node.Nodes.Add(parseStructure(s));
                 else
                     node.Nodes.Add(new TreeNode(field.Name + " (type: " + field.TypeName + ")") { Tag = field });
@@ -168,7 +168,7 @@ namespace BlenderFileBrowser
                 }
                 else
                 {
-                    PopulatedStructure[] structure = e.Node.Tag as PopulatedStructure[];
+                    Structure[] structure = e.Node.Tag as Structure[];
                     if(structure != null)
                     {
                         valueTextBox.Text = "[List]";
@@ -210,7 +210,7 @@ namespace BlenderFileBrowser
         {
             try
             {
-                PopulatedStructure[] structures = field.Dereference();
+                Structure[] structures = field.Dereference();
                 pointedToValueTreeView.Enabled = true;
                 pointedToValueTreeView.Nodes.Clear();
                 pointedToValueTreeView.BeginUpdate();
@@ -243,7 +243,7 @@ namespace BlenderFileBrowser
             {
                 try
                 {
-                    PopulatedStructure structure = field.Dereference()[0];
+                    Structure structure = field.Dereference()[0];
                     foreach(TreeNode node in fileTree.Nodes)
                         if(node.Text.Contains(structure.ContainingBlock.OldMemoryAddress.ToString("X" + loadedFile.PointerSize * 2)))
                         {

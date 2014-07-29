@@ -42,15 +42,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BlenderField.cs" />
+    <Compile Include="FieldDefinition.cs" />
     <Compile Include="BlenderFile.cs" />
-    <Compile Include="BlenderType.cs" />
+    <Compile Include="TypeDefinition.cs" />
     <Compile Include="Field.cs" />
     <Compile Include="FileBlock.cs" />
     <Compile Include="IField.cs" />
-    <Compile Include="PopulatedStructure.cs" />
+    <Compile Include="Structure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SDNAStructure.cs" />
+    <Compile Include="StructureDefinition.cs" />
     <Compile Include="StructureDNA.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

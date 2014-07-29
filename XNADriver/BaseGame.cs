@@ -162,12 +162,12 @@ namespace XNADriver
             transparentModels = new List<BlenderModel>();
             currentLayer = 1;
 
-            PopulatedStructure curscene = file.GetStructuresOfType("FileGlobal")[0]["curscene"].Dereference()[0];
+            Structure curscene = file.GetStructuresOfType("FileGlobal")[0]["curscene"].Dereference()[0];
             ulong next = curscene["base.first"].Value;
             while(next != 0)
             {
-                PopulatedStructure objBase = file.GetStructuresByAddress(next)[0];
-                PopulatedStructure obj = objBase["object"].Dereference()[0];
+                Structure objBase = file.GetStructuresByAddress(next)[0];
+                Structure obj = objBase["object"].Dereference()[0];
                 IField data = obj["data"];
                 int SDNAIndex = file.GetBlockByAddress((data as Field<ulong>).Value).SDNAIndex;
                 while(file.StructureDNA.StructureList[SDNAIndex].StructureTypeName != "Mesh")
@@ -182,7 +182,7 @@ namespace XNADriver
                     SDNAIndex = file.GetBlockByAddress((data as Field<ulong>).Value).SDNAIndex;
                 }
 
-                PopulatedStructure mesh = data.Dereference()[0];
+                Structure mesh = data.Dereference()[0];
                 BlenderModel model = new BlenderModel(mesh, obj, GraphicsDevice, file);
                 if(model.TextureHasTransparency)
                     transparentModels.Add(model);
