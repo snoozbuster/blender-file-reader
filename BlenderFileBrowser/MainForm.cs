@@ -25,10 +25,23 @@ namespace BlenderFileBrowser
             pointedToValueTreeView.NodeMouseDoubleClick += pointedToValueTreeView_NodeMouseDoubleClick;
             // I bound these to mouse click instead of node select because that way the binding source updates
             // correctly when clicking between the two trees.
-            pointedToValueTreeView.NodeMouseClick += fileTree_AfterSelect;
-            fileTree.NodeMouseClick += fileTree_AfterSelect;
+            pointedToValueTreeView.AfterSelect += nodeAfterSelect;
+            fileTree.AfterSelect += nodeAfterSelect;
+            fileTree.NodeMouseClick += nodeMouseClick;
+            pointedToValueTreeView.NodeMouseClick += nodeMouseClick;
+            valueLinkLabel.Links[0].Enabled = false;
 
             readComments();
+        }
+
+        void nodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            // if we've clicked on a node and it's not the one in the binding source, call the selection function
+            // to update the info view
+            // unfortunately, this function is called before AfterSelect; so sometimes (actually often)
+            // this nodeAfterSelect gets called twice. I can't really think of a good way to solve this problem.
+            if(iFieldBindingSource.Count > 0 && e.Node.Tag != iFieldBindingSource[0])
+                nodeAfterSelect(sender, new TreeViewEventArgs(e.Node, TreeViewAction.ByMouse));
         }
 
         private void readComments()
@@ -139,7 +152,7 @@ namespace BlenderFileBrowser
                     node.Nodes.Add(new TreeNode(field.Name + " (type: " + field.TypeName + ")") { Tag = field });
         }
 
-        private void fileTree_AfterSelect(object sender, TreeNodeMouseClickEventArgs e)
+        private void nodeAfterSelect(object sender, TreeViewEventArgs e)
         {
             valueLinkLabel.Links[0].Enabled = false;
             iFieldBindingSource.Clear();
