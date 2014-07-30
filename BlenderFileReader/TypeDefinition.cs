@@ -25,6 +25,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="name">Name of the type.</param>
         /// <param name="size">Size of the type in bytes.</param>
+        /// <param name="s">Structure DNA for the type.</param>
         public TypeDefinition(string name, short size, StructureDNA s)
         {
             Name = name;

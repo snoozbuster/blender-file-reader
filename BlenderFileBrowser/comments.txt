@@ -1,3 +1,14 @@
-﻿[FileGlobal]
+﻿# This file holds comments for the program. Comments are in the form:
+# [TypeName]
+# (this)=Comment about the type itself, which should not contain newlines
+# fieldname=Comment about the field named fieldname, which should not contain newlines
+# Lines beginning with a # are comments. Technically, any line not beginning with a [ is a comment, until a 
+# [ is found, then all lines not beginning with a # are parsed until a seperating newline is found, repeat.
+[FileGlobal]
 (this)=Contains information about the file itself; really, it's exactly what it says on the tin.
 curscene=Pointer to the current scene. This is probably the easiest starting point for digging through the interesting parts of the file.
+
+[Scene]
+(this)=Contains information about a scene.
+# test comment
+base=Linked list to the objects in the scene.

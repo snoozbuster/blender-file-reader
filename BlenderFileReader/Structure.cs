@@ -20,17 +20,21 @@ namespace BlenderFileReader
         /// Parses a file block. If the file block is SDNA or another block with block.count == 0, it will return null.
         /// </summary>
         /// <param name="block">The block to parse.</param>
+        /// <param name="blocksParsed">Number of blocks parsed so far.</param>
+        /// <param name="file">Source file for the structures.</param>
         /// <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
-        public static Structure[] ParseFileBlock(FileBlock block, StructureDNA sdna, int pointerSize, int blocksParsed, BlenderFile file)
+        public static Structure[] ParseFileBlock(FileBlock block, int blocksParsed, BlenderFile file)
         {
             if(block.Count == 0 || block.Code == "DNA1")
                 return null;
+
+            StructureDNA sdna = file.StructureDNA;
 
             if(block.Data.Length != sdna.StructureList[block.SDNAIndex].StructureTypeSize * block.Count)
             {
                 // generally, these are things like raw data; packed files, preview images, and arrays of pointers that are themselves pointed to.
                 // I have no idea what TEST and REND do.
-                file.RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (pointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + sdna.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
+                file.RawBlockMessages.Add(blocksParsed + " " + block.OldMemoryAddress.ToString("X" + (file.PointerSize * 2)) + " " + block.Code + " " + block.SDNAIndex + " " + sdna.StructureList[block.SDNAIndex].StructureTypeSize * block.Count + " " + block.Data.Length);
                 return null;
             }
 
@@ -165,7 +169,12 @@ namespace BlenderFileReader
 
         private int pointerSize { get { return ContainingFile.PointerSize; } }
 
-        // root structure constructor
+        /// <summary>
+        /// Creates a Structure filled with data.
+        /// </summary>
+        /// <param name="data">Bytestream representing the data to be filled.</param>
+        /// <param name="template">Structure prototype that matches the bytestream.</param>
+        /// <param name="file">Source file object.</param>
         protected Structure(byte[] data, StructureDefinition template, BlenderFile file)
         {
             // since this is a root structure, set its name to the type name (as an identification) and
@@ -196,6 +205,8 @@ namespace BlenderFileReader
         /// <param name="toParse">Structure to parse the fields of.</param>
         /// <param name="data">Data to input into fields.</param>
         /// <param name="position">Position of index in data.</param>
+        /// <param name="fields">List of fields to add to.</param>
+        /// <param name="parent">Parent of the fields being parsed.</param>
         private void parseStructureFields(Structure parent, StructureDefinition toParse, byte[] data, ref List<IField> fields, ref int position)
         {
             foreach(FieldDefinition f in toParse.FieldList)

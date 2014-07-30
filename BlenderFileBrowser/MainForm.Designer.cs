@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("Open a file to view it here.");
+            System.Windows.Forms.TreeNode treeNode3 = new System.Windows.Forms.TreeNode("Open a file to view it here.");
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -62,6 +62,7 @@
             this.pointedValueLabel = new System.Windows.Forms.Label();
             this.commentsLabel = new System.Windows.Forms.Label();
             this.commentsBox = new System.Windows.Forms.TextBox();
+            this.filterBox = new System.Windows.Forms.TextBox();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.iFieldBindingSource)).BeginInit();
             this.flagGroupBox.SuspendLayout();
@@ -97,6 +98,7 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            this.exitToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X)));
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
@@ -105,12 +107,12 @@
             // 
             this.fileTree.Location = new System.Drawing.Point(12, 27);
             this.fileTree.Name = "fileTree";
-            treeNode1.Name = "defaultNode";
-            treeNode1.Text = "Open a file to view it here.";
+            treeNode3.Name = "defaultNode";
+            treeNode3.Text = "Open a file to view it here.";
             this.fileTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode1});
+            treeNode3});
             this.fileTree.ShowRootLines = false;
-            this.fileTree.Size = new System.Drawing.Size(302, 338);
+            this.fileTree.Size = new System.Drawing.Size(302, 315);
             this.fileTree.TabIndex = 1;
             // 
             // blendFileOpenDialog
@@ -125,7 +127,7 @@
             this.fieldNameTextBox.Name = "fieldNameTextBox";
             this.fieldNameTextBox.ReadOnly = true;
             this.fieldNameTextBox.Size = new System.Drawing.Size(124, 20);
-            this.fieldNameTextBox.TabIndex = 2;
+            this.fieldNameTextBox.TabIndex = 3;
             // 
             // iFieldBindingSource
             // 
@@ -156,7 +158,7 @@
             this.fullyQualifiedNameTextBox.Name = "fullyQualifiedNameTextBox";
             this.fullyQualifiedNameTextBox.ReadOnly = true;
             this.fullyQualifiedNameTextBox.Size = new System.Drawing.Size(124, 20);
-            this.fullyQualifiedNameTextBox.TabIndex = 4;
+            this.fullyQualifiedNameTextBox.TabIndex = 5;
             // 
             // fieldTypeLabel
             // 
@@ -174,7 +176,7 @@
             this.fieldTypeNameTextBox.Name = "fieldTypeNameTextBox";
             this.fieldTypeNameTextBox.ReadOnly = true;
             this.fieldTypeNameTextBox.Size = new System.Drawing.Size(100, 20);
-            this.fieldTypeNameTextBox.TabIndex = 3;
+            this.fieldTypeNameTextBox.TabIndex = 4;
             // 
             // typeSizeLabel
             // 
@@ -192,7 +194,7 @@
             this.typeSizeTextBox.Name = "typeSizeTextBox";
             this.typeSizeTextBox.ReadOnly = true;
             this.typeSizeTextBox.Size = new System.Drawing.Size(30, 20);
-            this.typeSizeTextBox.TabIndex = 5;
+            this.typeSizeTextBox.TabIndex = 6;
             // 
             // lengthLabel
             // 
@@ -210,7 +212,7 @@
             this.lengthTextBox.Name = "lengthTextBox";
             this.lengthTextBox.ReadOnly = true;
             this.lengthTextBox.Size = new System.Drawing.Size(30, 20);
-            this.lengthTextBox.TabIndex = 6;
+            this.lengthTextBox.TabIndex = 7;
             // 
             // totalLabel
             // 
@@ -228,7 +230,7 @@
             this.totalTextBox.Name = "totalTextBox";
             this.totalTextBox.ReadOnly = true;
             this.totalTextBox.Size = new System.Drawing.Size(30, 20);
-            this.totalTextBox.TabIndex = 7;
+            this.totalTextBox.TabIndex = 8;
             // 
             // flagGroupBox
             // 
@@ -253,6 +255,7 @@
             this.is2DArrayCheckBox.Name = "is2DArrayCheckBox";
             this.is2DArrayCheckBox.Size = new System.Drawing.Size(67, 17);
             this.is2DArrayCheckBox.TabIndex = 23;
+            this.is2DArrayCheckBox.TabStop = false;
             this.is2DArrayCheckBox.Text = "2D Array";
             this.is2DArrayCheckBox.UseVisualStyleBackColor = true;
             // 
@@ -265,6 +268,7 @@
             this.isArrayCheckBox.Name = "isArrayCheckBox";
             this.isArrayCheckBox.Size = new System.Drawing.Size(50, 17);
             this.isArrayCheckBox.TabIndex = 22;
+            this.isArrayCheckBox.TabStop = false;
             this.isArrayCheckBox.Text = "Array";
             this.isArrayCheckBox.UseVisualStyleBackColor = true;
             // 
@@ -277,6 +281,7 @@
             this.pointerToPointerCheckBox.Name = "pointerToPointerCheckBox";
             this.pointerToPointerCheckBox.Size = new System.Drawing.Size(111, 17);
             this.pointerToPointerCheckBox.TabIndex = 21;
+            this.pointerToPointerCheckBox.TabStop = false;
             this.pointerToPointerCheckBox.Text = "Pointer To Pointer";
             this.pointerToPointerCheckBox.UseVisualStyleBackColor = true;
             // 
@@ -289,6 +294,7 @@
             this.isPointerCheckBox.Name = "isPointerCheckBox";
             this.isPointerCheckBox.Size = new System.Drawing.Size(59, 17);
             this.isPointerCheckBox.TabIndex = 20;
+            this.isPointerCheckBox.TabStop = false;
             this.isPointerCheckBox.Text = "Pointer";
             this.isPointerCheckBox.UseVisualStyleBackColor = true;
             // 
@@ -301,6 +307,7 @@
             this.isPrimitiveCheckBox.Name = "isPrimitiveCheckBox";
             this.isPrimitiveCheckBox.Size = new System.Drawing.Size(65, 17);
             this.isPrimitiveCheckBox.TabIndex = 19;
+            this.isPrimitiveCheckBox.TabStop = false;
             this.isPrimitiveCheckBox.Text = "Primitive";
             this.isPrimitiveCheckBox.UseVisualStyleBackColor = true;
             // 
@@ -310,7 +317,7 @@
             this.valueTextBox.Name = "valueTextBox";
             this.valueTextBox.ReadOnly = true;
             this.valueTextBox.Size = new System.Drawing.Size(430, 20);
-            this.valueTextBox.TabIndex = 9;
+            this.valueTextBox.TabIndex = 10;
             // 
             // valueLinkLabel
             // 
@@ -320,7 +327,7 @@
             this.valueLinkLabel.Location = new System.Drawing.Point(321, 119);
             this.valueLinkLabel.Name = "valueLinkLabel";
             this.valueLinkLabel.Size = new System.Drawing.Size(37, 13);
-            this.valueLinkLabel.TabIndex = 8;
+            this.valueLinkLabel.TabIndex = 9;
             this.valueLinkLabel.TabStop = true;
             this.valueLinkLabel.Text = "Value:";
             this.valueLinkLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.valueLinkLabel_LinkClicked);
@@ -331,7 +338,7 @@
             this.pointedToValueTreeView.Location = new System.Drawing.Point(320, 180);
             this.pointedToValueTreeView.Name = "pointedToValueTreeView";
             this.pointedToValueTreeView.Size = new System.Drawing.Size(288, 185);
-            this.pointedToValueTreeView.TabIndex = 10;
+            this.pointedToValueTreeView.TabIndex = 11;
             // 
             // pointedValueLabel
             // 
@@ -359,14 +366,26 @@
             this.commentsBox.ReadOnly = true;
             this.commentsBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.commentsBox.Size = new System.Drawing.Size(137, 187);
-            this.commentsBox.TabIndex = 11;
+            this.commentsBox.TabIndex = 12;
             this.commentsBox.Text = resources.GetString("commentsBox.Text");
+            // 
+            // filterBox
+            // 
+            this.filterBox.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+            this.filterBox.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.CustomSource;
+            this.filterBox.Enabled = false;
+            this.filterBox.Location = new System.Drawing.Point(12, 345);
+            this.filterBox.Name = "filterBox";
+            this.filterBox.Size = new System.Drawing.Size(302, 20);
+            this.filterBox.TabIndex = 2;
+            this.filterBox.TextChanged += new System.EventHandler(this.filterBox_TextChanged);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(763, 377);
+            this.Controls.Add(this.filterBox);
             this.Controls.Add(this.commentsBox);
             this.Controls.Add(this.commentsLabel);
             this.Controls.Add(this.pointedValueLabel);
@@ -437,6 +456,7 @@
         private System.Windows.Forms.Label pointedValueLabel;
         private System.Windows.Forms.Label commentsLabel;
         private System.Windows.Forms.TextBox commentsBox;
+        private System.Windows.Forms.TextBox filterBox;
     }
 }
 

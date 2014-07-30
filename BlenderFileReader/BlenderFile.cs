@@ -133,7 +133,7 @@ namespace BlenderFileReader
             int blocksParsed = 0;
             foreach(FileBlock b in fileBlocks)
             {
-                Structure[] temp = Structure.ParseFileBlock(b, StructureDNA, PointerSize, blocksParsed++, this);
+                Structure[] temp = Structure.ParseFileBlock(b, blocksParsed++, this);
                 if(temp != null)
                     structures.Add(b.OldMemoryAddress, temp);
             }

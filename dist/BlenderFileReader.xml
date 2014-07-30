@@ -1,0 +1,720 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlenderFileReader</name>
+    </assembly>
+    <members>
+        <member name="T:BlenderFileReader.FieldDefinition">
+            <summary>
+            A field of a structure as defined by SDNA.
+            </summary>
+        </member>
+        <member name="F:BlenderFileReader.FieldDefinition.Name">
+            <summary>
+            Name of the field.
+            </summary>
+        </member>
+        <member name="F:BlenderFileReader.FieldDefinition.Type">
+            <summary>
+            Type (as defined by SDNA) of the field.
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.FieldDefinition.#ctor(System.String,BlenderFileReader.TypeDefinition,BlenderFileReader.StructureDNA)">
+            <summary>
+            Creates a new field.
+            </summary>
+            <param name="name">Name of the field.</param>
+            <param name="type">Type (as defined by SDNA) of the field.</param>
+            <param name="sdna">Structure DNA for the file.</param>
+        </member>
+        <member name="M:BlenderFileReader.FieldDefinition.#ctor(System.Int16,System.Int16,BlenderFileReader.StructureDNA)">
+            <summary>
+            Creates a new field.
+            </summary>
+            <param name="nameIndex">Index of SDNA.NameList containing the name of the field.</param>
+            <param name="typeIndex">Index of SDNA.TypeList containing the type of the field.</param>
+            <param name="sdna">Structure DNA in which the field is contained.</param>
+        </member>
+        <member name="M:BlenderFileReader.FieldDefinition.InitializeStructure">
+            <summary>
+            If the field is non-primitive, this will populate Structure. Safe to call on primitives.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FieldDefinition.IsPrimitive">
+            <summary>
+            Shortcut to Type.IsPrimitive; indicates if the field is a structure.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FieldDefinition.IsPointer">
+            <summary>
+            Indicates if the field is a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FieldDefinition.IsArray">
+            <summary>
+            Indicates if the field is an array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FieldDefinition.Structure">
+            <summary>
+            Gets the underlying StructureDefinition if the field is not a primitive.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.BlenderFile">
+            <summary>
+            Reads a file into StructureDNA, PopulatedStructs, and whatnot, and when done represents a loaded Blender file
+            </summary>
+        </member>
+        <member name="F:BlenderFileReader.BlenderFile.RawBlockMessages">
+            <summary>
+            A list of pieces of information about raw data blocks (blocks that are just data). In the format
+            "block_number block_address block_code block_index bytes_given bytes_expected"
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.#ctor(System.String)">
+            <summary>
+            Creates a new parsed <pre>BlenderFile</pre> from a filepath.
+            </summary>
+            <param name="path">Path to <pre>.blend</pre> file to be parsed.</param>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.#ctor(System.IO.BinaryReader)">
+            <summary>
+            Creates a new parsed <pre>BlenderFile</pre> from a <pre>BinaryReader</pre> containing a <pre>.blend</pre> file.
+            Warning: this constructor will not and cannot set SourceFilename, as the reader has no way of
+            knowing where its source stream came from.
+            </summary>
+            <param name="reader"><pre>BinaryReader</pre> containing a Blender file.</param>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.readHeader(System.IO.BinaryReader,System.String@)">
+            <summary>
+            Reads the header of the blend file
+            </summary>
+            <param name="fileReader"></param>
+            <param name="versionNumber"></param>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.readBlocks(System.IO.BinaryReader)">
+            <summary>
+            Reads the file blocks from the file. Returns the block with the code <pre>DNA1</pre>, which is the file's
+            structure DNA.
+            </summary>
+            <param name="fileReader">Reference to file reader for current file.</param>
+            <returns>File's Structure DNA.</returns>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.createStructures">
+            <summary>
+            Parses the file blocks to create a map of memory addresses to populated structures.
+            </summary>
+            <returns>A dictionary mapping memory addresses to the structures held in the corresponding file block.</returns>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.GetStructuresOfType(System.String)">
+            <summary>
+            Gets all structures of the named type. This isn't great to use on things like MPoly or other list types, as you won't be able to tell
+            when the list ends and the next begins.
+            </summary>
+            <param name="typeName">Name of the type you want to find.</param>
+            <returns>Array of all PopulatedStructures of that type.</returns>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.GetStructuresByAddress(System.UInt64)">
+            <summary>
+            Gets an array of PopulatedStructures by their containing FileBlock's old memory address.
+            Returns null if address isn't found.
+            </summary>
+            <param name="address">Address to look up.</param>
+            <returns></returns>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.GetBlocksByCode(System.String)">
+            <summary>
+            Returns a list of all blocks by a given block code.
+            </summary>
+            <param name="code">Four-character block code.</param>
+            <returns></returns>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.GetBlockList">
+            <summary>
+            Gets the file block list.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:BlenderFileReader.BlenderFile.GetBlockByAddress(System.UInt64)">
+            <summary>
+            Gets a single block by its old memory address.
+            </summary>
+            <param name="address">Old address</param>
+            <returns></returns>
+        </member>
+        <member name="P:BlenderFileReader.BlenderFile.PointerSize">
+            <summary>
+            Describes the pointer size of the file (either 4 or 8).
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.BlenderFile.VersionNumber">
+            <summary>
+            Version number (in string form) of the version of Blender this file was saved in.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.BlenderFile.Structures">
+            <summary>
+            List of arrays of PopulatedStructures created from parsing a FileBlock. 
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.BlenderFile.StructureDNA">
+            <summary>
+            A reference to the parsed structure DNA for this file.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.BlenderFile.SourceFilename">
+            <summary>
+            The path on disk to the file. May be null if the <pre>BlenderFile</pre> was instantiated with 
+            a <pre>BinaryReader</pre> instead of a string.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.TypeDefinition">
+            <summary>
+            A type as defined by SDNA.
+            </summary>
+        </member>
+        <member name="F:BlenderFileReader.TypeDefinition.Name">
+            <summary>
+            Name of the type.
+            </summary>
+        </member>
+        <member name="F:BlenderFileReader.TypeDefinition.Size">
+            <summary>
+            Size in bytes of the type.
+            </summary>
+        </member>
+        <member name="F:BlenderFileReader.TypeDefinition.IsPrimitive">
+            <summary>
+            Indicates if this type is a primitive (non-primitive types are defined in the SDNA).
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.TypeDefinition.#ctor(System.String,System.Int16,BlenderFileReader.StructureDNA)">
+            <summary>
+            Creates a new type as defined by SDNA.
+            </summary>
+            <param name="name">Name of the type.</param>
+            <param name="size">Size of the type in bytes.</param>
+            <param name="s">Structure DNA for the type.</param>
+        </member>
+        <member name="T:BlenderFileReader.Field`1">
+            <summary>
+            Holds field info for a primitive field.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.IField`1">
+            <summary>
+            Represents a single strongly-typed field in Blender. Use IStructField if the field contains a struct.
+            </summary>
+            <typeparam name="T">T should be specified as a primitive; where the type of <pre>string</pre> is a special case
+            denoting a Blender-defined struct; in which case the value should be the SDNA type name.</typeparam>
+        </member>
+        <member name="T:BlenderFileReader.IField">
+            <summary>
+            Represents a single weakly-typed field in a structure. 
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.IField.Dereference">
+            <summary>
+            If the represented field is a pointer, dereferences it and returns the pointed-to structure(s).
+            If the field is not a pointer, throws <pre>InvalidOperationException</pre>. If the pointer is null,
+            returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
+            </summary>
+            <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
+        </member>
+        <member name="M:BlenderFileReader.IField.DereferenceAsArray">
+            <summary>
+            If the represented field is an array of pointers, dereferences them and returns an array of references.
+            For null pointers, null is used. If the represented field is not an array of pointers, throws InvalidOperationException.
+            If the field is a pointer to a pointer, throws InvalidDataException.
+            </summary>
+            <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
+        </member>
+        <member name="P:BlenderFileReader.IField.Value">
+            <summary>
+            Value contained in the field. Use this sparingly.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.Name">
+            <summary>
+            Name of the field. Should not contain array dimensions or dots.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.FullyQualifiedName">
+            <summary>
+            Fully qualified name of the field using dot notation.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.Size">
+            <summary>
+            Size of the field. If the field is a struct, this will be the sum of all contained fields.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.IsPrimitive">
+            <summary>
+            Indicates if the field is a primitive; or, equivalently, indicates if was instantiated with a
+            primitive type name.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.IsPointer">
+            <summary>
+            Indicates if the field is a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.IsPointerToPointer">
+            <summary>
+            Indicates if the field is a pointer to a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.IsArray">
+            <summary>
+            Indicates if the field is an array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.Is2DArray">
+            <summary>
+            Indicates if the field is a 2D array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.Length">
+            <summary>
+            If the field is an array, returns the number of items in the field. Otherwise, returns 1.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.Parent">
+            <summary>
+            Field's parent (if any).
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.ParentType">
+            <summary>
+            Field's parent's type. If Parent is null, returns "(this)".
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField.TypeName">
+            <summary>
+            Name of the field's type.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IField`1.Value">
+            <summary>
+            Value contained in the field.
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.Field`1.#ctor(`0,System.String,System.String,System.Int16,BlenderFileReader.IField,System.Int32)">
+            <summary>
+            Creates a new Field.
+            </summary>
+            <param name="value">Value of the field.</param>
+            <param name="name">Name of the field (like "*next" or "id" or "mat[4][4]").</param>
+            <param name="type">Type of the field.</param>
+            <param name="size">Size (in bytes) of the field.</param>
+            <param name="parent">Parent of the field. Cannot be null.</param>
+            <param name="pointerSize">Size of the pointers in the file containing this field</param>
+        </member>
+        <member name="M:BlenderFileReader.Field`1.Dereference">
+            <summary>
+            If the represented field is a pointer, dereferences it and returns the pointed-to structure(s).
+            If the field is not a pointer, throws <pre>InvalidOperationException</pre>. If the pointer is null,
+            returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
+            </summary>
+            <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
+        </member>
+        <member name="M:BlenderFileReader.Field`1.DereferenceAsArray">
+            <summary>
+            If the represented field is an array of pointers, dereferences them and returns an array of references.
+            For null pointers, null is used. If the represented field is not an array of pointers, throws InvalidOperationException.
+            If the field is a pointer to a pointer, throws InvalidDataException.
+            </summary>
+            <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
+        </member>
+        <member name="M:BlenderFileReader.Field`1.ToString">
+            <summary>
+            Converts the value of the field to a string.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.BlenderFileReader#IField#Value">
+            <summary>
+            Value contained in the field. Use this sparingly.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.Value">
+            <summary>
+            Value contained in the field.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.Name">
+            <summary>
+            Name of the field. Should not contain array dimensions or dots.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.FullyQualifiedName">
+            <summary>
+            Fully qualified name of the field using dot notation.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.Size">
+            <summary>
+            Size of the field. If the field is a struct, this will be the sum of all contained fields.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.IsPrimitive">
+            <summary>
+            Indicates if the field is a primitive; or, equivalently, indicates if was instantiated with a
+            primitive type name.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.IsPointer">
+            <summary>
+            Indicates if the field is a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.IsPointerToPointer">
+            <summary>
+            Indicates if the field is a pointer to a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.IsArray">
+            <summary>
+            Indicates if the field is an array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.Is2DArray">
+            <summary>
+            Indicates if the field is a 2D array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.Parent">
+            <summary>
+            Field's parent (if any).
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.ParentType">
+            <summary>
+            Field's parent's type. If Parent is null, returns "(this)".
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.TypeName">
+            <summary>
+            Name of the field's type.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Field`1.Length">
+            <summary>
+            If the field is an array, returns the number of items in the field. Otherwise, returns 1.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.FileBlock">
+            <summary>
+            Defines a FileBlock that contains a header and data.
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.FileBlock.ReadBlock(System.IO.BinaryReader,System.Int32)">
+            <summary>
+            Reads a file block and returns it. 
+            If the block is SDNA, initializes and returns an instance of <pre>StructureDNA</pre>. 
+            </summary>
+            <param name="file">A blend file with the reader at the start of a file block.</param>
+            <param name="pointerSize">The pointer size of the current file.</param>
+            <returns>A parsed FileBlock.</returns>
+        </member>
+        <member name="M:BlenderFileReader.FileBlock.#ctor(System.String,System.Int32,System.Int32,System.Int32,System.Byte[])">
+            <summary>
+            Creates a new FileBlock.
+            </summary>
+            <param name="code">Fileblock code.</param>
+            <param name="size">Block size.</param>
+            <param name="sdna">Structure index into SDNA.</param>
+            <param name="count">Number of structures in the block.</param>
+            <param name="data">Payload of the block.</param>
+        </member>
+        <member name="P:BlenderFileReader.FileBlock.Code">
+            <summary>
+            Four-character code indicating the type of data in the FileBlock.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FileBlock.Size">
+            <summary>
+            Size of the FileBlock's data, in bytes.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FileBlock.SDNAIndex">
+            <summary>
+            Index in the structures defined by SDNA used to decode the data in this FileBlock.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FileBlock.Count">
+            <summary>
+            Number of objects to decode.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FileBlock.Data">
+            <summary>
+            Raw data contained in the FileBlock.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.FileBlock.OldMemoryAddress">
+            <summary>
+            Old memory address of the FileBlock; used for lists and pointer references.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.IStructField">
+            <summary>
+            Represents a field that contains a struct. The struct is represented as a list of <pre>IField</pre>s.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IStructField.Fields">
+            <summary>
+            A list of fields contained in this structure.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.IStructField.Item(System.String)">
+            <summary>
+            Array-style access to fields.
+            </summary>
+            <param name="identifier">Name of the field you want to look up.</param>
+            <returns>IField object representing the field with that identifier</returns>
+        </member>
+        <member name="P:BlenderFileReader.IStructField.NumFields">
+            <summary>
+            A count of the number of fields in this structure and all contained structures.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.Structure">
+            <summary>
+            Represents a SDNA structure filled with data.
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.Structure.ParseFileBlock(BlenderFileReader.FileBlock,System.Int32,BlenderFileReader.BlenderFile)">
+            <summary>
+            Parses a file block. If the file block is SDNA or another block with block.count == 0, it will return null.
+            </summary>
+            <param name="block">The block to parse.</param>
+            <param name="blocksParsed">Number of blocks parsed so far.</param>
+            <param name="file">Source file for the structures.</param>
+            <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
+        </member>
+        <member name="M:BlenderFileReader.Structure.#ctor(System.Byte[],BlenderFileReader.StructureDefinition,BlenderFileReader.BlenderFile)">
+            <summary>
+            Creates a Structure filled with data.
+            </summary>
+            <param name="data">Bytestream representing the data to be filled.</param>
+            <param name="template">Structure prototype that matches the bytestream.</param>
+            <param name="file">Source file object.</param>
+        </member>
+        <member name="M:BlenderFileReader.Structure.parseStructureFields(BlenderFileReader.Structure,BlenderFileReader.StructureDefinition,System.Byte[],System.Collections.Generic.List{BlenderFileReader.IField}@,System.Int32@)">
+            <summary>
+            Recursively parses fields into flattened form.
+            </summary>
+            <param name="toParse">Structure to parse the fields of.</param>
+            <param name="data">Data to input into fields.</param>
+            <param name="position">Position of index in data.</param>
+            <param name="fields">List of fields to add to.</param>
+            <param name="parent">Parent of the fields being parsed.</param>
+        </member>
+        <member name="M:BlenderFileReader.Structure.Dereference">
+            <summary>
+            If the represented field is a pointer, dereferences it and returns the pointed-to structure(s).
+            If the field is not a pointer, throws <pre>InvalidOperationException</pre>. If the pointer is null,
+            returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
+            </summary>
+            <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
+        </member>
+        <member name="M:BlenderFileReader.Structure.DereferenceAsArray">
+            <summary>
+            If the represented field is an array of pointers, dereferences them and returns an array of references.
+            For null pointers, null is used. If the represented field is not an array of pointers, throws InvalidOperationException.
+            If the field is a pointer to a pointer, throws InvalidDataException.
+            </summary>
+            <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
+        </member>
+        <member name="M:BlenderFileReader.Structure.GetEnumerator">
+            <summary>
+            Iterates over all fields in the structure, flattening as necessary.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:BlenderFileReader.Structure.System#Collections#IEnumerable#GetEnumerator">
+            <summary>
+            Iterates over all fields in the structure, flattening as necessary.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:BlenderFileReader.Structure.ContainingBlock">
+            <summary>
+            The FileBlock containing this structure. May be null for embedded structures.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.ContainingFile">
+            <summary>
+            The BlenderFile containing this structure.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.NumFields">
+            <summary>
+            A count of the number of fields in this structure and all contained structures.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.BlenderFileReader#IField#Value">
+            <summary>
+            Value contained in the field. Use this sparingly.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Fields">
+            <summary>
+            A list of fields contained in this structure.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Value">
+            <summary>
+            Value contained in the field.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Name">
+            <summary>
+            Name of the field. Should not contain array dimensions or dots.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.FullyQualifiedName">
+            <summary>
+            Fully qualified name of the field using dot notation.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Parent">
+            <summary>
+            Field's parent (if any).
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.ParentType">
+            <summary>
+            Field's parent's type. If Parent is null, returns "(this)".
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.TypeName">
+            <summary>
+            Name of the field's type.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Size">
+            <summary>
+            Size of the field. If the field is a struct, this will be the sum of all contained fields.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.IsPrimitive">
+            <summary>
+            Indicates if the field is a primitive; or, equivalently, indicates if was instantiated with a
+            primitive type name.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.IsPointer">
+            <summary>
+            Indicates if the field is a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.IsPointerToPointer">
+            <summary>
+            Indicates if the field is a pointer to a pointer.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.IsArray">
+            <summary>
+            Indicates if the field is an array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Is2DArray">
+            <summary>
+            Indicates if the field is a 2D array.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Length">
+            <summary>
+            If the field is an array, returns the number of items in the field. Otherwise, returns 1.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.Structure.Item(System.String)">
+            <summary>
+            Array-style access to fields.
+            </summary>
+            <param name="identifier">Name of the field you want to look up.</param>
+            <returns>IField object representing the field with that identifier</returns>
+        </member>
+        <member name="T:BlenderFileReader.StructureDefinition">
+            <summary>
+            Represents a structure as defined by SDNA. 
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.StructureDefinition.#ctor(System.Int16,System.Collections.Generic.List{BlenderFileReader.FieldDefinition},BlenderFileReader.StructureDNA)">
+            <summary>
+            Creates a new structure as defined by SDNA.
+            </summary>
+            <param name="structureType">Index in SDNA.TypeList of the structure type.</param>
+            <param name="fieldDict">List of fields in the structure.</param>
+            <param name="sdna">Structure DNA that contains this structure.</param>
+        </member>
+        <member name="M:BlenderFileReader.StructureDefinition.InitializeFields">
+            <summary>
+            Initializes all the non-primitive fields' Structure member.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDefinition.StructureType">
+            <summary>
+            Type (as defined by SDNA) of the structure.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDefinition.StructureTypeName">
+            <summary>
+            Name of the structure's type (shortcut to StructureType.Name).
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDefinition.StructureTypeSize">
+            <summary>
+            Size of the structure's type (shortcut to StructureType.Size).
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDefinition.FieldList">
+            <summary>
+            List of fields in the structure.
+            </summary>
+        </member>
+        <member name="T:BlenderFileReader.StructureDNA">
+            <summary>
+            Represents the file's StructureDNA.
+            </summary>
+        </member>
+        <member name="M:BlenderFileReader.StructureDNA.#ctor(System.String,System.Int32,System.Int32,System.Int32,System.Byte[])">
+            <summary>
+            Creates a new StructureDNA block.
+            </summary>
+            <param name="code">Fileblock code (should be "DNA1")</param>
+            <param name="size">Block size.</param>
+            <param name="sdna">SDNA index (should be 0)</param>
+            <param name="count">FileBlock count (should be 1)</param>
+            <param name="data">Bytestream representing the SDNA.</param>
+        </member>
+        <member name="P:BlenderFileReader.StructureDNA.NameList">
+            <summary>
+            List of all the names contained in SDNA.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDNA.TypeList">
+            <summary>
+            List of all the types and their sizes contained in SDNA.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDNA.TypeNameList">
+            <summary>
+            List of all the names of the types in SDNA; used primarily for BlenderType and BlenderField's constructors.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDNA.StructureList">
+            <summary>
+            List of all structures defined in SDNA.
+            </summary>
+        </member>
+        <member name="P:BlenderFileReader.StructureDNA.StructureTypeIndices">
+            <summary>
+            List of all of the structures' types by index in TypeList/TypeNameList; used primarily for BlenderType and BlenderField's constructors.
+            </summary>
+        </member>
+    </members>
+</doc>

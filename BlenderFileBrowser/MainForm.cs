@@ -18,17 +18,22 @@ namespace BlenderFileBrowser
 
         private Dictionary<string, Dictionary<string, string>> commentsIndex = new Dictionary<string, Dictionary<string, string>>();
 
+        private string[] rootNodeTypeNames = null;
+        private TreeNode[] unfilteredNodeList = null;
+        private bool filtering = false;
+
         public MainForm()
         {
             InitializeComponent();
 
             pointedToValueTreeView.NodeMouseDoubleClick += pointedToValueTreeView_NodeMouseDoubleClick;
-            // I bound these to mouse click instead of node select because that way the binding source updates
-            // correctly when clicking between the two trees.
             pointedToValueTreeView.AfterSelect += nodeAfterSelect;
             fileTree.AfterSelect += nodeAfterSelect;
             fileTree.NodeMouseClick += nodeMouseClick;
             pointedToValueTreeView.NodeMouseClick += nodeMouseClick;
+            filterBox.GotFocus += filterBox_GotFocus;
+            filterBox.LostFocus += filterBox_LostFocus;
+
             valueLinkLabel.Links[0].Enabled = false;
 
             readComments();
@@ -61,14 +66,18 @@ namespace BlenderFileBrowser
                             commentsIndex.Add(typeName, new Dictionary<string, string>());
                         Dictionary<string, string> typeDict = commentsIndex[typeName];
                         string comment = reader.ReadLine();
+                        while(comment.Length > 0 && comment[0] == '#') // # is a comment
+                            comment = reader.ReadLine();
                         while(comment != "\n" && comment != "" && comment != null)
                         {
                             string[] parts = comment.Split('=');
                             if(typeDict.ContainsKey(parts[0]))
-                                typeDict[parts[0]] = parts[1];
+                                typeDict[parts[0]] = string.Join("=", parts.Skip(1));
                             else
-                                typeDict.Add(parts[0], parts[1]);
+                                typeDict.Add(parts[0], string.Join("=", parts.Skip(1)));
                             comment = reader.ReadLine();
+                            while(comment.Length > 0 && comment[0] == '#') // # is a comment
+                                comment = reader.ReadLine();
                         }
                         line = reader.ReadLine();
                     }
@@ -89,14 +98,39 @@ namespace BlenderFileBrowser
             loadedFile = new BlenderFile(filename);
             fileTree.Nodes.Clear();
             fileTree.ShowRootLines = true;
-            fileTree.BeginUpdate();
+            List<TreeNode> nodes = new List<TreeNode>();
             foreach(Structure[] structure in loadedFile.Structures)
-                fileTree.Nodes.Add(loadNode(structure));
+                nodes.Add(loadNode(structure));
             TreeNode rawBlocks = new TreeNode("[Raw data blocks]");
             foreach(string s in loadedFile.RawBlockMessages)
                 rawBlocks.Nodes.Add(new TreeNode("[" + s.Split(' ')[0] + "]: " + s.Split(' ')[1]) { Tag = s });
-            fileTree.Nodes.Add(rawBlocks);
-            fileTree.EndUpdate();
+            nodes.Add(rawBlocks);
+            unfilteredNodeList = nodes.ToArray();
+            // the nodes will get added to the TreeView when filterBox_LostFocus() is called
+            List<string> temp = new List<string>();
+            foreach(TreeNode node in unfilteredNodeList)
+            {
+                Structure s = node.Tag as Structure;
+                if(s != null)
+                {
+                    string typename = s.TypeName;
+                    if(!temp.Contains(typename))
+                        temp.Add(typename);
+                }
+                else if(node.Text.StartsWith("[List of"))
+                    foreach(TreeNode child in node.Nodes)
+                        if((s = child.Tag as Structure) != null)
+                        {
+                            string typename = s.TypeName;
+                            if(!temp.Contains(typename))
+                                temp.Add(typename);
+                        }
+            }
+            rootNodeTypeNames = temp.ToArray();
+            filterBox.AutoCompleteCustomSource = new AutoCompleteStringCollection();
+            filterBox.AutoCompleteCustomSource.AddRange(rootNodeTypeNames);
+            filterBox.Enabled = true;
+            filterBox_LostFocus(this, null);
         }
 
         private TreeNode loadNode(Structure[] structure)
@@ -269,6 +303,57 @@ namespace BlenderFileBrowser
                 {
                     // field is an array of pointers, not sure what to do with that
                 }
+            }
+        }
+
+        private void filterBox_TextChanged(object sender, EventArgs e)
+        {
+            if(filterBox.Text != "Filter structures" && filterBox.Text != "")
+            {
+                filtering = true;
+
+                string text = filterBox.Text;
+                fileTree.BeginUpdate();
+                fileTree.Nodes.Clear();
+                fileTree.Nodes.AddRange(unfilteredNodeList.Where(t => t.Text.StartsWith(text) || t.Text.StartsWith("[List of " + text)).ToArray());
+                fileTree.EndUpdate();
+            }
+            else if(filterBox.Text == "" && filtering)
+            {
+                filtering = false; 
+
+                fileTree.BeginUpdate();
+                fileTree.Nodes.Clear();
+                fileTree.Nodes.AddRange(unfilteredNodeList);
+                fileTree.EndUpdate();
+            }
+        }
+
+        void filterBox_GotFocus(object sender, EventArgs e)
+        {
+            if(filterBox.Text == "Filter structures")
+            {
+                filterBox.Text = "";
+                filterBox.ForeColor = SystemColors.WindowText;
+            }
+        }
+
+        void filterBox_LostFocus(object sender, EventArgs e)
+        {
+            if(filterBox.Text == "")
+            {
+                if(filtering)
+                {
+                    fileTree.BeginUpdate();
+                    fileTree.Nodes.Clear();
+                    fileTree.Nodes.AddRange(unfilteredNodeList);
+                    fileTree.EndUpdate();
+                }
+
+                filtering = false;
+
+                filterBox.Text = "Filter structures";
+                filterBox.ForeColor = SystemColors.InactiveCaption;
             }
         }
     }

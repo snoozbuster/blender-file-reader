@@ -72,6 +72,14 @@ namespace BlenderFileReader
             return block;
         }
 
+        /// <summary>
+        /// Creates a new FileBlock.
+        /// </summary>
+        /// <param name="code">Fileblock code.</param>
+        /// <param name="size">Block size.</param>
+        /// <param name="sdna">Structure index into SDNA.</param>
+        /// <param name="count">Number of structures in the block.</param>
+        /// <param name="data">Payload of the block.</param>
         protected FileBlock(string code, int size, int sdna, int count, byte[] data)
         {
             Code = code;

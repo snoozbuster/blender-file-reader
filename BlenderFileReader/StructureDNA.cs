@@ -31,6 +31,14 @@ namespace BlenderFileReader
         /// </summary>
         public List<short> StructureTypeIndices { get; private set; }
 
+        /// <summary>
+        /// Creates a new StructureDNA block.
+        /// </summary>
+        /// <param name="code">Fileblock code (should be "DNA1")</param>
+        /// <param name="size">Block size.</param>
+        /// <param name="sdna">SDNA index (should be 0)</param>
+        /// <param name="count">FileBlock count (should be 1)</param>
+        /// <param name="data">Bytestream representing the SDNA.</param>
         public StructureDNA(string code, int size, int sdna, int count, byte[] data)
             : base(code, size, sdna, count, data)
         {

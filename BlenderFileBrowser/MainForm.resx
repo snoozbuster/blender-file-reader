@@ -126,6 +126,9 @@
   <metadata name="iFieldBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>298, 17</value>
   </metadata>
+  <metadata name="iFieldBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>298, 17</value>
+  </metadata>
   <data name="commentsBox.Text" xml:space="preserve">
     <value>Tip: When viewing a pointer in the "Pointed to Value" display, you can double-click the node to immediately open that node in the display.
 Tip: This box will display information about a selected field's use, if anything is known.</value>

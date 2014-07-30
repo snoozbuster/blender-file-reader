@@ -108,6 +108,7 @@ namespace BlenderFileReader
         /// <param name="name">Name of the field (like "*next" or "id" or "mat[4][4]").</param>
         /// <param name="type">Type of the field.</param>
         /// <param name="size">Size (in bytes) of the field.</param>
+        /// <param name="parent">Parent of the field. Cannot be null.</param>
         /// <param name="pointerSize">Size of the pointers in the file containing this field</param>
         public Field(T value, string name, string type, short size, IField parent, int pointerSize)
         {

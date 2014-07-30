@@ -32,6 +32,9 @@ namespace BlenderFileReader
         /// </summary>
         public bool IsArray { get { return Name.Contains('['); } }
 
+        /// <summary>
+        /// Gets the underlying StructureDefinition if the field is not a primitive.
+        /// </summary>
         public StructureDefinition Structure { get { if(IsPrimitive) throw new InvalidOperationException(Name + " is a primitive and does not have an SDNAStructure."); if(structure == null) InitializeStructure(); return structure.Value; } }
         private StructureDefinition? structure;
         private bool isInitialized;
@@ -43,6 +46,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="name">Name of the field.</param>
         /// <param name="type">Type (as defined by SDNA) of the field.</param>
+        /// <param name="sdna">Structure DNA for the file.</param>
         public FieldDefinition(string name, TypeDefinition type, StructureDNA sdna)
         {
             Name = name;
@@ -57,6 +61,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="nameIndex">Index of SDNA.NameList containing the name of the field.</param>
         /// <param name="typeIndex">Index of SDNA.TypeList containing the type of the field.</param>
+        /// <param name="sdna">Structure DNA in which the field is contained.</param>
         public FieldDefinition(short nameIndex, short typeIndex, StructureDNA sdna)
         {
             Name = sdna.NameList[nameIndex];

@@ -36,6 +36,7 @@ namespace BlenderFileReader
         /// </summary>
         /// <param name="structureType">Index in SDNA.TypeList of the structure type.</param>
         /// <param name="fieldDict">List of fields in the structure.</param>
+        /// <param name="sdna">Structure DNA that contains this structure.</param>
         public StructureDefinition(short structureType, List<FieldDefinition> fieldDict, StructureDNA sdna)
         {
             fieldDictionary = fieldDict;
