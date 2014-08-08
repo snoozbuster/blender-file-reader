@@ -61,20 +61,20 @@ namespace HTMLRendererDriver
 
         private void writeBodyContent(StreamWriter writer)
         {
-            foreach(PopulatedStructure[] block in parsedFile.Structures)
+            foreach(dynamic[] block in parsedFile.Structures)
             {
                 int index = 0;
                 bool outer_odd = true;
                 writeStartTag(writer, "div", "class=\"structure " + block[0].TypeName + (block.Length > 1 ? " list" : "") + "\"");
                 writeTable(writer, new[] { "structure_head" },
                     new[] { "Structure Type:", "Structure Size:", "Number of Fields:", "File Block Address:" }, "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)),
-                    false, new[] { block[0].TypeName + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].NumFields.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)) });
+                    false, new string[] { block[0].TypeName + (block.Length > 1 ? "[" + block.Length + "]" : ""), block[0].Size.ToString(), block[0].NumFields.ToString(), "0x" + block[0].ContainingBlock.OldMemoryAddress.ToString("X" + (parsedFile.PointerSize * 2)) });
                 if(block.Length > 1)
                 {
                     writeStartTag(writer, "table", "class=\"structure_body\"");
                     writeTableHead(writer, new[] { "Index", "Structure" });
                 }
-                foreach(PopulatedStructure s in block)
+                foreach(dynamic s in block)
                 {
                     if(block.Length > 1)
                     {
@@ -122,7 +122,7 @@ namespace HTMLRendererDriver
             writeEndTag(writer);
         }
 
-        private void writeField(StreamWriter writer, IField field, bool odd, int fieldNumber)
+        private void writeField(StreamWriter writer, dynamic field, bool odd, int fieldNumber)
         {
             string fieldVal = field.ToString();
             if(field.IsPointer)
@@ -154,7 +154,7 @@ namespace HTMLRendererDriver
                         if(field.IsPointerToPointer)
                         {
                             fieldVal += " (pointer to pointer array: ";
-                            FileBlock pointed = parsedFile.GetBlockByAddress((field as Field<ulong>).Value); // this is probably a safe cast
+                            FileBlock pointed = parsedFile.GetBlockByAddress(field); // this is probably a safe cast
                             if(pointed != null && pointed.Size % parsedFile.PointerSize == 0) // probably a pointer
                             {
                                 ulong[] pointers = new ulong[pointed.Size / parsedFile.PointerSize];
@@ -177,9 +177,9 @@ namespace HTMLRendererDriver
             }
 
             string typeName = field.TypeName + (field.IsArray ? (field.Is2DArray ? "[]" : "") + "[]" : "");
-            if(!field.IsArray && field.IsPointer && field.IsPrimitive && (field as Field<ulong>).Value != 0)
+            if(!field.IsArray && field.IsPointer && field.IsPrimitive && field != 0)
             {
-                FileBlock associatedBlock = parsedFile.GetBlockByAddress((field as Field<ulong>).Value);
+                FileBlock associatedBlock = parsedFile.GetBlockByAddress(field);
                 if(associatedBlock != null)
                     typeName += " (points to " + (associatedBlock.Size == associatedBlock.Count * parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeSize ? 
                         parsedFile.StructureDNA.StructureList[associatedBlock.SDNAIndex].StructureTypeName : "raw data") + ")";
@@ -291,14 +291,14 @@ namespace HTMLRendererDriver
             writer.WriteLine(tabs + text);
         }
 
-        private string getValueAsPointerString(Field<ulong> pointer)
+        private string getValueAsPointerString(IField pointer)
         {
             return pointer.Value.ToString("X" + (pointer.Size * 2));
         }
 
-        private string getValueAsPointerArray(Field<ulong[]> pointerArray)
+        private string getValueAsPointerArray(IField pointerArray)
         {
-            return "{ " + string.Join(", ", pointerArray.Value.Select(s => s.ToString("X" + (pointerArray.Size * 2)))) + " }";
+            return "{ " + string.Join(", ", pointerArray.Value.Select(new Func<ulong, string>(s => s.ToString("X" + (pointerArray.Size * 2))))) + " }";
         }
 
         // I dislike this function because I can't make it nice and formatted.

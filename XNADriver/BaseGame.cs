@@ -162,24 +162,24 @@ namespace XNADriver
             transparentModels = new List<BlenderModel>();
             currentLayer = 1;
 
-            Structure curscene = file.GetStructuresOfType("FileGlobal")[0]["curscene"].Dereference()[0];
-            ulong next = curscene["base.first"].Value;
+            dynamic curscene = file.GetStructuresOfType("FileGlobal")[0].curscene.Dereference()[0];
+            ulong next = curscene.@base.first;
             while(next != 0)
             {
-                Structure objBase = file.GetStructuresByAddress(next)[0];
-                Structure obj = objBase["object"].Dereference()[0];
-                IField data = obj["data"];
-                int SDNAIndex = file.GetBlockByAddress((data as Field<ulong>).Value).SDNAIndex;
+                dynamic objBase = file.GetStructuresByAddress(next)[0];
+                dynamic obj = objBase.@object.Dereference()[0];
+                dynamic data = obj.data;
+                int SDNAIndex = file.GetBlockByAddress(data).SDNAIndex;
                 while(file.StructureDNA.StructureList[SDNAIndex].StructureTypeName != "Mesh")
                 {
-                    ulong nextPointer = (objBase["next"] as Field<ulong>).Value;
+                    ulong nextPointer = objBase.next;
                     if(nextPointer == 0)
                         return; // we've run out of objects in the list, and haven't found any meshes
 
                     objBase = file.GetStructuresByAddress(nextPointer)[0];
-                    obj = objBase["object"].Dereference()[0];
-                    data = obj["data"];
-                    SDNAIndex = file.GetBlockByAddress((data as Field<ulong>).Value).SDNAIndex;
+                    obj = objBase.@object.Dereference()[0];
+                    data = obj.data;
+                    SDNAIndex = file.GetBlockByAddress(data).SDNAIndex;
                 }
 
                 Structure mesh = data.Dereference()[0];
@@ -189,7 +189,7 @@ namespace XNADriver
                 else
                     models.Add(model);
 
-                next = (objBase["next"] as Field<ulong>).Value;
+                next = objBase.next.Value;
             }
         }
 

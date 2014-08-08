@@ -29,7 +29,7 @@ namespace XNADriver
 
         protected GraphicsDevice GraphicsDevice;
 
-        public BlenderModel(Structure mesh, Structure obj, GraphicsDevice GraphicsDevice, BlenderFile file)
+        public BlenderModel(dynamic mesh, dynamic obj, GraphicsDevice GraphicsDevice, BlenderFile file)
         {
             // If I was less sloppy, I would have used casts to generics instead of the raw dynamic Value on IField,
             // but I'm lazy and this code is soon to go away anyway.
@@ -44,10 +44,10 @@ namespace XNADriver
             // both structures use the same vertex structure
             List<Vector3> verts = new List<Vector3>();
             List<short[]> unconvertedNormals = new List<short[]>();
-            foreach(Structure s in mesh["mvert"].Dereference())
+            foreach(dynamic s in mesh.mvert.Dereference())
             {
-                float[] vector = s["co"].Value;
-                unconvertedNormals.Add(s["no"].Value);
+                float[] vector = s.co;
+                unconvertedNormals.Add(s.no);
                 verts.Add(new Vector3(vector[0], vector[1], vector[2]));
             }
 
@@ -67,31 +67,31 @@ namespace XNADriver
                 normalVerts[i + 1] = new VertexPositionColor(verts[i / 2] + normals[i / 2] * 0.25f, Color.MidnightBlue);
             }
 
-            float[] posVector = obj["loc"].Value;
+            float[] posVector = obj.loc;
             this.Position = new Vector3(posVector[0], posVector[1], posVector[2]);
-            float[] scaleVector = obj["size"].Value;
+            float[] scaleVector = obj.size;
             this.Scale = new Vector3(scaleVector[0], scaleVector[1], scaleVector[2]);
-            float[] rotVector = obj["rot"].Value;
+            float[] rotVector = obj.rot;
             this.Rotation = Quaternion.CreateFromYawPitchRoll(rotVector[1], rotVector[0], rotVector[2]);
             this.Vertices = vertices;
             this.NormalVerts = normalVerts;
             this.VertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionNormalTexture.VertexDeclaration, this.Vertices.Length, BufferUsage.None);
             this.NormalBuffer = new VertexBuffer(GraphicsDevice, VertexPositionColor.VertexDeclaration, this.NormalVerts.Length, BufferUsage.None);
             this.Texture = texture;
-            this.Name = new string(obj["id.name"].Value).Split('\0')[0].Substring(2); // remove null term, remove first two characters
+            this.Name = new string(obj.id.name).Split('\0')[0].Substring(2); // remove null term, remove first two characters
 
             // LSB on represents layer 1, next bit is layer 2, etc
-            this.Layer = obj["lay"].Value;
+            this.Layer = obj.lay;
 
             // the "mat" field is a pointer to a pointer (technically, a pointer to an array of pointers)
             // I'm not sure what to do with multiple materials, so just use the first one
-            ulong blockaddr = mesh["mat"].Value;
+            ulong blockaddr = mesh.mat;
             if(blockaddr != 0)
             {
-                Structure mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
-                this.TextureHasTransparency = mat["game.alpha_blend"].Value != 0;
+                dynamic mat = file.GetStructuresByAddress(BitConverter.ToUInt32(file.GetBlockByAddress(blockaddr).Data, 0))[0];
+                this.TextureHasTransparency = mat.game.alpha_blend != 0;
 
-                int mode = mat["mode"].Value;
+                int mode = mat.mode;
                 this.LightingEnabled = (mode & 4) == 0; // as far as I can tell, this is where "shadeless" is stored.
             }
             else
@@ -125,7 +125,7 @@ namespace XNADriver
             return normals;
         }
 
-        private VertexPositionNormalTexture[] loadOldModel(BlenderFile file, Structure mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
+        private VertexPositionNormalTexture[] loadOldModel(BlenderFile file, dynamic mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
         {
             // I believe this function has a bug when used on a mesh that has unconnected chunks of vertices;
             // however the only file I currently have that exhibits this problem decompresses to 240MB when I use the HTML
@@ -135,16 +135,16 @@ namespace XNADriver
 
             List<int[]> faces = new List<int[]>();
             List<float[][]> tFaces = new List<float[][]>();
-            foreach(Structure s in mesh["mface"].Dereference())
-                faces.Add(new int[] { s["v1"].Value, s["v2"].Value, s["v3"].Value, s["v4"].Value });
-            foreach(Structure s in mesh["mtface"].Dereference())
-                tFaces.Add((float[][])s["uv"].Value);
+            foreach(dynamic s in mesh.mface.Dereference())
+                faces.Add(new int[] { s.v1, s.v2, s.v3, s.v4 });
+            foreach(dynamic s in mesh.mtface.Dereference())
+                tFaces.Add((float[][])s.uv);
 
             // assume all faces use same texture
-            Structure image = mesh["mtface"].Dereference()[0]["tpage"].Dereference()[0];
-            if(image["packedfile"].Value != 0)
+            dynamic image = mesh.mtface.Dereference()[0].tpage.Dereference()[0];
+            if(image.packedfile != 0)
             {
-                byte[] rawImage = file.GetBlockByAddress(image["packedfile"].Dereference()[0]["data"].Value).Data;
+                byte[] rawImage = file.GetBlockByAddress(image.packedfile.Dereference()[0].data).Data;
                 using(Stream s = new MemoryStream(rawImage))
                     texture = Texture2D.FromStream(GraphicsDevice, s);
             }
@@ -190,48 +190,48 @@ namespace XNADriver
             return output.ToArray();
         }
 
-        private VertexPositionNormalTexture[] loadNewModel(BlenderFile file, Structure mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
+        private VertexPositionNormalTexture[] loadNewModel(BlenderFile file, dynamic mesh, List<Vector3> verts, List<Vector3> normals, out Texture2D texture)
         {
             List<VertexPositionNormalTexture> output = new List<VertexPositionNormalTexture>();
 
             List<Vector2> edges = new List<Vector2>(); // using x as index1 and y as index2
-            foreach(Structure s in mesh["medge"].Dereference())
-                edges.Add(new Vector2((s["v1"] as IField<int>).Value, (s["v2"] as IField<int>).Value));
+            foreach(dynamic s in mesh.medge.Dereference())
+                edges.Add(new Vector2(s.v1, s.v2));
             // a "loop" is a vertex index and an edge index. Groups of these are used to define a "poly", which is a face. 
             List<Vector2> loops = new List<Vector2>(); // using x as "v" and y as "e"
-            foreach(Structure s in mesh["mloop"].Dereference())
-                loops.Add(new Vector2((s["v"] as IField<int>).Value, (s["e"] as IField<int>).Value));
+            foreach(dynamic s in mesh.mloop.Dereference())
+                loops.Add(new Vector2(s.v, s.e));
             List<Vector2> uvLoops = null; // using x as u and y as v
             Vector2[] backupUVs = new[] { new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0) }; // in case uvLoops is null
-            if(mesh["mloopuv"].Value != 0)
+            if(mesh.mloopuv != 0)
             {
                 uvLoops = new List<Vector2>();
-                foreach(Structure s in mesh["mloopuv"].Dereference())
+                foreach(dynamic s in mesh.mloopuv.Dereference())
                 {
-                    float[] uv = s["uv"].Value;
+                    float[] uv = s.uv;
                     uvLoops.Add(new Vector2(uv[0], uv[1]));
                 }
             }
             List<Vector2> polys = new List<Vector2>(); // using x as "loopstart" and y as "totloop" (loop length)
-            foreach(Structure s in mesh["mpoly"].Dereference())
-                polys.Add(new Vector2((s["loopstart"] as IField<int>).Value, (s["totloop"] as IField<int>).Value));
+            foreach(dynamic s in mesh.mpoly.Dereference())
+                polys.Add(new Vector2(s.loopstart, s.totloop));
             // assume all faces use same texture for now
-            if(mesh["mtpoly"].Value != 0)
+            if(mesh.mtpoly != 0)
             {
                 try
                 {
                     // todo: sometimes this line fails, probably due to "assume all faces use same texture"
-                    Structure image = mesh["mtpoly"].Dereference()[0]["tpage"].Dereference()[0];
-                    if(image["packedfile"].Value != 0)
+                    dynamic image = mesh.mtpoly.Dereference()[0].tpage.Dereference()[0];
+                    if(image.packedfile != 0)
                     {
-                        byte[] rawImage = file.GetBlockByAddress(image["packedfile"].Dereference()[0]["data"].Value).Data;
+                        byte[] rawImage = file.GetBlockByAddress(image.packedfile.Dereference()[0].data).Data;
                         using(Stream s = new MemoryStream(rawImage))
                             texture = Texture2D.FromStream(GraphicsDevice, s);
                     }
                     else
                     {
                         string texturePath = image["name"].ToString().Split('\0')[0].Replace("/", "\\").Replace("\\\\", "\\");
-                        string filePath = file.GetStructuresOfType("FileGlobal")[0]["filename"].ToString();
+                        string filePath = file.GetStructuresOfType("FileGlobal")[0].filename.ToString();
                         filePath = filePath.Substring(0, filePath.LastIndexOf('\\'));
                         using(Stream s = File.Open((filePath + texturePath).Replace("\'", ""), FileMode.Open, FileAccess.Read))
                             texture = Texture2D.FromStream(GraphicsDevice, s);

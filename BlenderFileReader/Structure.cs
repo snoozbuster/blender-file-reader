@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 
@@ -10,7 +11,7 @@ namespace BlenderFileReader
     /// Represents a SDNA structure filled with data.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")] // nq means "no quotes", without it the value returned by DebuggerDisplay will be quoted.
-    public class Structure : IStructField, IEnumerable<IField>
+    public class Structure : DynamicObject, IStructField, IEnumerable<IField>
     {
         // this string is hidden from the debugger, but used as the display string for the field instead of ToString().
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -22,7 +23,7 @@ namespace BlenderFileReader
         /// <param name="block">The block to parse.</param>
         /// <param name="blocksParsed">Number of blocks parsed so far.</param>
         /// <param name="file">Source file for the structures.</param>
-        /// <returns>An array of PopulatedStructures, or { null } if no structures are defined.</returns>
+        /// <returns>An array of Structures, or { null } if no structures are defined.</returns>
         public static Structure[] ParseFileBlock(FileBlock block, int blocksParsed, BlenderFile file)
         {
             if(block.Count == 0 || block.Code == "DNA1")
@@ -93,16 +94,12 @@ namespace BlenderFileReader
         /// <summary>
         /// Value contained in the field. Use this sparingly.
         /// </summary>
-        dynamic IField.Value { get { return this; } }
+        public dynamic Value { get { return this; } }
 
         /// <summary>
         /// A list of fields contained in this structure.
         /// </summary>
         public IField[] Fields { get; private set; }
-        /// <summary>
-        /// Value contained in the field.
-        /// </summary>
-        public string Value { get; private set; }
         /// <summary>
         /// Name of the field. Should not contain array dimensions or dots.
         /// </summary>
@@ -170,16 +167,15 @@ namespace BlenderFileReader
         private int pointerSize { get { return ContainingFile.PointerSize; } }
 
         /// <summary>
-        /// Creates a Structure filled with data.
+        /// Creates a root-level Structure filled with data.
         /// </summary>
         /// <param name="data">Bytestream representing the data to be filled.</param>
         /// <param name="template">Structure prototype that matches the bytestream.</param>
         /// <param name="file">Source file object.</param>
         protected Structure(byte[] data, StructureDefinition template, BlenderFile file)
         {
-            // since this is a root structure, set its name to the type name (as an identification) and
-            // Value to the type name (as expected by IField)
-            Name = Value = TypeName = template.StructureTypeName;
+            // since this is a root structure, set its name to the type name (as an identification)
+            Name = TypeName = template.StructureTypeName;
             // roots have no parents
             Parent = null;
             Size = template.StructureTypeSize;
@@ -218,7 +214,7 @@ namespace BlenderFileReader
                         int height = getIntFromArrayName(f.Name);
                         int width = 1;
                         if(f.Name.Count(v => { return v == '['; }) == 1)
-                            fields.Add(new Field<ulong[]>(toPointerArray(subArray(data, position, pointerSize * height)),
+                            fields.Add(new Field(toPointerArray(subArray(data, position, pointerSize * height)),
                                 f.Name, f.Type.Name, (short)pointerSize, parent, pointerSize));
                         else
                         {
@@ -226,14 +222,14 @@ namespace BlenderFileReader
                             int end = f.Name.LastIndexOf(']');
                             string numberString = f.Name.Substring(start + 1, end - 1 - start);
                             width = int.Parse(numberString);
-                            fields.Add(new Field<ulong[][]>(to2DPointerArray(subArray(data, position, pointerSize * height * width), height),
+                            fields.Add(new Field(to2DPointerArray(subArray(data, position, pointerSize * height * width), height),
                                 f.Name, f.Type.Name, (short)pointerSize, parent, pointerSize));
                         }
                         position += pointerSize * width * height;
                     }
                     else
                     {
-                        fields.Add(new Field<ulong>(toPointer(subArray(data, position, pointerSize)),
+                        fields.Add(new Field(toPointer(subArray(data, position, pointerSize)),
                             f.Name, f.Type.Name, (short)pointerSize, parent, pointerSize));
                         position += pointerSize;
                     }
@@ -269,7 +265,7 @@ namespace BlenderFileReader
                     {
                         // Unfortunately, I forgot about the case of non-primitives in arrays and didn't really plan for it
                         // with the format rewrite. One option would be to create some sort of class that inherits from
-                        // IField and is just an array of PopulatedStructures. Another could be to cheese PopulatedStructure
+                        // IField and is just an array of Structures. Another could be to cheese Structure
                         // by making a "structure" with the required fields as data. I don't really like either of those ideas,
                         // so I'm going to cheese the system by just baking each array item into the structure as a seperate field.
                         // I don't like this idea much either, but it's the simplest solution and it's better than the others.
@@ -341,60 +337,60 @@ namespace BlenderFileReader
                 {
                     // I love that I can nest fieldFactoryArrayHelper calls. Unintended side effect.
                     if(fieldType == "char")
-                        return new Field<char[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => Encoding.ASCII.GetChars(value, j + i, 1)[0])), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => Encoding.ASCII.GetChars(value, j + i, 1)[0])), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "uchar")
-                        return new Field<byte[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => value[i + j])), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => value[i + j])), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "short")
-                        return new Field<short[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt16(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt16(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "ushort")
-                        return new Field<ushort[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt16(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt16(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "int")
-                        return new Field<int[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt32(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt32(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "long") // C longs are arch-dependant and should vary with the pointer size.
-                        return pointerSize == 4 ? (IField)new Field<int[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt32(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize) :
-                                                  (IField)new Field<long[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return pointerSize == 4 ? (IField)new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt32(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize) :
+                                                  (IField)new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "ulong")
-                        return pointerSize == 4 ? (IField)new Field<uint[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt32(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize) :
-                                                  (IField)new Field<ulong[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return pointerSize == 4 ? (IField)new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt32(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize) :
+                                                  (IField)new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "float")
-                        return new Field<float[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToSingle(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToSingle(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "double")
-                        return new Field<double[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToDouble(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToDouble(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "int64_t")
-                        return new Field<long[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "uint64_t")
-                        return new Field<ulong[][]>(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize * fieldSize, i => fieldFactoryArrayHelper(subArray(value, i, value.Length / getIntFromArrayName(fieldName)), fieldSize, j => BitConverter.ToUInt64(value, i + j))), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "void") // probably a pointer
-                        return new Field<ulong[][]>(to2DPointerArray(value, getIntFromArrayName(fieldName)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(to2DPointerArray(value, getIntFromArrayName(fieldName)), fieldName, fieldType, fieldSize, parent, pointerSize);
                 }
                 else if(count == 1)
                 {
                     if(fieldType == "char")
-                        return new Field<char[]>(fieldFactoryArrayHelper(value, fieldSize, i => Encoding.ASCII.GetChars(value, i, 1)[0]), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => Encoding.ASCII.GetChars(value, i, 1)[0]), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "uchar")
-                        return new Field<byte[]>(fieldFactoryArrayHelper(value, fieldSize, i => value[i]), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => value[i]), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "short")
-                        return new Field<short[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt16(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt16(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "ushort")
-                        return new Field<ushort[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt16(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt16(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "int")
-                        return new Field<int[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt32(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt32(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "long") // C longs are arch-dependant and should vary with the pointer size.
-                        return pointerSize == 4 ? (IField)new Field<int[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt32(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize) :
-                                                  (IField)new Field<long[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return pointerSize == 4 ? (IField)new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt32(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize) :
+                                                  (IField)new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "ulong")
-                        return pointerSize == 4 ? (IField)new Field<uint[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt32(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize) :
-                                                  (IField)new Field<ulong[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return pointerSize == 4 ? (IField)new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt32(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize) :
+                                                  (IField)new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "float")
-                        return new Field<float[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToSingle(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToSingle(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "double")
-                        return new Field<double[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToDouble(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToDouble(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "int64_t")
-                        return new Field<long[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "uint64_t")
-                        return new Field<ulong[]>(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(fieldFactoryArrayHelper(value, fieldSize, i => BitConverter.ToUInt64(value, i)), fieldName, fieldType, fieldSize, parent, pointerSize);
                     else if(fieldType == "void") // probably a pointer
-                        return new Field<ulong[]>(toPointerArray(value), fieldName, fieldType, fieldSize, parent, pointerSize);
+                        return new Field(toPointerArray(value), fieldName, fieldType, fieldSize, parent, pointerSize);
                 }
                 else
                     throw new InvalidOperationException("Library doesn't support 3D arrays, it'll need a patch.");
@@ -402,31 +398,31 @@ namespace BlenderFileReader
             else
             {
                 if(fieldType == "char")
-                    return new Field<char>(Encoding.ASCII.GetChars(value, 0, 1)[0], fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(Encoding.ASCII.GetChars(value, 0, 1)[0], fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "uchar")
-                    return new Field<byte>(value[0], fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(value[0], fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "short")
-                    return new Field<short>(BitConverter.ToInt16(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToInt16(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "ushort")
-                    return new Field<ushort>(BitConverter.ToUInt16(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToUInt16(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "int")
-                    return new Field<int>(BitConverter.ToInt32(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToInt32(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "long") // C longs are arch-dependant and should vary with the pointer size.
-                    return pointerSize == 4 ? (IField)new Field<int>(BitConverter.ToInt32(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize) :
-                                              (IField)new Field<long>(BitConverter.ToInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return pointerSize == 4 ? (IField)new Field(BitConverter.ToInt32(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize) :
+                                              (IField)new Field(BitConverter.ToInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "ulong")
-                    return pointerSize == 4 ? (IField)new Field<uint>(BitConverter.ToUInt32(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize) :
-                                              (IField)new Field<ulong>(BitConverter.ToUInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return pointerSize == 4 ? (IField)new Field(BitConverter.ToUInt32(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize) :
+                                              (IField)new Field(BitConverter.ToUInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "float")
-                    return new Field<float>(BitConverter.ToSingle(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToSingle(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "double")
-                    return new Field<double>(BitConverter.ToDouble(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToDouble(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "int64_t")
-                    return new Field<long>(BitConverter.ToInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "uint64_t")
-                    return new Field<ulong>(BitConverter.ToUInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(BitConverter.ToUInt64(value, 0), fieldName, fieldType, fieldSize, parent, pointerSize);
                 else if(fieldType == "void") // probably a pointer
-                    return new Field<ulong>(toPointer(value), fieldName, fieldType, fieldSize, parent, pointerSize);
+                    return new Field(toPointer(value), fieldName, fieldType, fieldSize, parent, pointerSize);
                     
             }
             throw new ArgumentException("Bad type name.", "fieldType");
@@ -461,30 +457,16 @@ namespace BlenderFileReader
             return number;
         }
 
-        /// <summary>
-        /// Array-style access to fields.
-        /// </summary>
-        /// <param name="identifier">Name of the field you want to look up.</param>
-        /// <returns>IField object representing the field with that identifier</returns>
-        public IField this[string identifier]
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            get
-            {
-                string[] parts = identifier.Split('.');
-                try
-                {
-                    int index = 0;
-                    IStructField parent = this;
-                    // this loop will fail if we access members of a primitive or have a bad name somewhere
-                    while(index < parts.Length - 1) // exhaust all dot-following, leaving only the final identifier
-                        parent = (IStructField)parent[parts[index++]];
-                    return parent.Fields.First(f => f.Name == parts[index]);
-                }
-                catch
-                {
-                    throw new ArgumentException("Identifier " + identifier + " not found.", identifier);
-                }
-            }
+            try { result = Fields.Single(f => f.Name == binder.Name); }
+            catch { result = null; }
+            return result != null;
+        }
+
+        public override IEnumerable<string> GetDynamicMemberNames()
+        {
+            return Fields.Select(f => f.Name);
         }
 
         /// <summary>
@@ -492,8 +474,8 @@ namespace BlenderFileReader
         /// If the field is not a pointer, throws <pre>InvalidOperationException</pre>. If the pointer is null,
         /// returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
         /// </summary>
-        /// <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
-        public Structure[] Dereference()
+        /// <returns>A <pre>Structure</pre> pointed to by the field, or null.</returns>
+        public dynamic[] Dereference()
         {
             throw new InvalidOperationException("This field is not a pointer.");
         }
@@ -503,8 +485,8 @@ namespace BlenderFileReader
         /// For null pointers, null is used. If the represented field is not an array of pointers, throws InvalidOperationException.
         /// If the field is a pointer to a pointer, throws InvalidDataException.
         /// </summary>
-        /// <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
-        public Structure[][] DereferenceAsArray()
+        /// <returns>An array of <pre>Structure</pre>s.</returns>
+        public dynamic[][] DereferenceAsArray()
         {
             throw new InvalidOperationException("This field is not a pointer.");
         }

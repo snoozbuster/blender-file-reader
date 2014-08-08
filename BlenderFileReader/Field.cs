@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,17 +13,12 @@ namespace BlenderFileReader
     /// Holds field info for a primitive field.
     /// </summary>
     [DebuggerDisplay("{FullyQualifiedName}: {ToString(),nq}")] // nq means "no quotes", without it the value returned by ToString() will be quoted.
-    public class Field<T> : IField<T>
+    public class Field : DynamicObject, IField
     {
         /// <summary>
         /// Value contained in the field. Use this sparingly.
         /// </summary>
-        dynamic IField.Value { get { return Value; } }
-
-        /// <summary>
-        /// Value contained in the field.
-        /// </summary>
-        public T Value { get; private set; }
+        public dynamic Value { get; private set; }
 
         /// <summary>
         /// Name of the field. Should not contain array dimensions or dots.
@@ -71,7 +67,7 @@ namespace BlenderFileReader
         /// <summary>
         /// Indicates if the field is an array.
         /// </summary>
-        public bool IsArray { get { return typeof(T).IsArray; } }
+        public bool IsArray { get; private set; }
 
         /// <summary>
         /// Indicates if the field is a 2D array.
@@ -110,13 +106,13 @@ namespace BlenderFileReader
         /// <param name="size">Size (in bytes) of the field.</param>
         /// <param name="parent">Parent of the field. Cannot be null.</param>
         /// <param name="pointerSize">Size of the pointers in the file containing this field</param>
-        public Field(T value, string name, string type, short size, IField parent, int pointerSize)
+        public Field(dynamic value, string name, string type, short size, IField parent, int pointerSize)
         {
             if(parent == null)
                 throw new ArgumentNullException("parent");
 
             this.pointerSize = pointerSize;
-            IsPointer = IsPointerToPointer = false;
+            IsPointer = IsPointerToPointer = IsArray = false;
             Length = 1;
 
             if(name[0] == '*')
@@ -132,6 +128,7 @@ namespace BlenderFileReader
                     throw new Exception("Don't know what to do with a pointer to a pointer to a pointer");
             }
 
+            IsArray = name.Count(c => c == '[') != 0;
             Is2DArray = name.Count(c => c == '[') == 2;
             if(name.Contains('['))
             {
@@ -155,14 +152,14 @@ namespace BlenderFileReader
         /// If the field is not a pointer, throws <pre>InvalidOperationException</pre>. If the pointer is null,
         /// returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
         /// </summary>
-        /// <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
-        public Structure[] Dereference()
+        /// <returns>A <pre>Structure</pre> pointed to by the field, or null.</returns>
+        public dynamic[] Dereference()
         {
             if(!IsPointer)
                 throw new InvalidOperationException("This field is not a pointer.");
             if(IsPointerToPointer)
-                throw new InvalidDataException("This field is a pointer to a pointer and cannot be converted to a PopulatedStructure.");
-            if(typeof(T).IsArray)
+                throw new InvalidDataException("This field is a pointer to a pointer and cannot be converted to a Structure.");
+            if(IsArray)
                 throw new InvalidOperationException("This is an array of pointers. Use DereferenceAsArray().");
 
             ulong address = (ulong)Convert.ChangeType(Value, typeof(ulong));
@@ -174,14 +171,14 @@ namespace BlenderFileReader
         /// For null pointers, null is used. If the represented field is not an array of pointers, throws InvalidOperationException.
         /// If the field is a pointer to a pointer, throws InvalidDataException.
         /// </summary>
-        /// <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
-        public Structure[][] DereferenceAsArray()
+        /// <returns>An array of <pre>Structure</pre>s.</returns>
+        public dynamic[][] DereferenceAsArray()
         {
             if(!IsPointer)
                 throw new InvalidOperationException("This field is not a pointer.");
             if(IsPointerToPointer)
-                throw new InvalidDataException("This field is a pointer to a pointer and cannot be converted to a PopulatedStructure.");
-            if(!typeof(T).IsArray)
+                throw new InvalidDataException("This field is a pointer to a pointer and cannot be converted to a Structure.");
+            if(!IsArray)
                 throw new InvalidOperationException("This is not an array of pointers. Use Dereference().");
 
             // have to use dynamic here too
@@ -192,6 +189,13 @@ namespace BlenderFileReader
             return output;
         }
 
+        public override bool TryConvert(ConvertBinder binder, out object result)
+        {
+            // I'm not sure if this is what I want.
+            result = binder.Type == Value.GetType() ? Value : null;
+            return result != null;
+        }
+
         /// <summary>
         /// Converts the value of the field to a string.
         /// </summary>
@@ -200,8 +204,8 @@ namespace BlenderFileReader
         {
             // This method heavily uses dynamic to skip compile-time checking so that we don't have to deal with
             // tons of reflection and casting.
-            Type type = typeof(T);
             dynamic val = Value;
+            Type type = val.GetType();
             if(IsPointer) // T is ulong, ulong[], or ulong[][]
             {
                 string output;

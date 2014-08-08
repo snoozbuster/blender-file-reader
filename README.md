@@ -4,6 +4,9 @@ so you can puzzle out what each part of the file does and how to use it. More he
 created using WinForms that can do the same thing without creating massive HTML files. It's not perfect, and there's still
 a few things I've left unfinished or haven't fully fleshed out; in this regard the HTML renderer is superior.
 
+This particular version of the library uses `DynamicObject`; this allows you to pretend the objects returned by the library
+are in fact the structures defined in the file. Instead of `obj["field1.field1"].Value` you can instead just write `obj.field1.field2`. Additional type information is kept as well. 
+
 I've unloaded the HTML renderer project from the solution and edited it to produce a warning when built in case someone
 is updating their source code and misses the new, useful browser. For the most part, you shouldn't need to touch it.
 

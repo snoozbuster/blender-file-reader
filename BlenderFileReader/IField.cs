@@ -81,47 +81,27 @@ namespace BlenderFileReader
         /// If the field is not a pointer, throws <pre>InvalidOperationException</pre>. If the pointer is null,
         /// returns null. If the field is a pointer to a pointer or an array of pointers throws InvalidDataException.
         /// </summary>
-        /// <returns>A <pre>PopulatedStructure</pre> pointed to by the field, or null.</returns>
-        Structure[] Dereference();
+        /// <returns>A <pre>Structure</pre> pointed to by the field, or null.</returns>
+        dynamic[] Dereference();
 
         /// <summary>
         /// If the represented field is an array of pointers, dereferences them and returns an array of references.
         /// For null pointers, null is used. If the represented field is not an array of pointers, throws InvalidOperationException.
         /// If the field is a pointer to a pointer, throws InvalidDataException.
         /// </summary>
-        /// <returns>An array of <pre>PopulatedStructure</pre>s.</returns>
-        Structure[][] DereferenceAsArray();
-    }
-
-    /// <summary>
-    /// Represents a single strongly-typed field in Blender. Use IStructField if the field contains a struct.
-    /// </summary>
-    /// <typeparam name="T">T should be specified as a primitive; where the type of <pre>string</pre> is a special case
-    /// denoting a Blender-defined struct; in which case the value should be the SDNA type name.</typeparam>
-    public interface IField<T> : IField
-    {
-        /// <summary>
-        /// Value contained in the field.
-        /// </summary>
-        new T Value { get; }
+        /// <returns>An array of <pre>Structure</pre>s.</returns>
+        dynamic[][] DereferenceAsArray();
     }
 
     /// <summary>
     /// Represents a field that contains a struct. The struct is represented as a list of <pre>IField</pre>s.
     /// </summary>
-    public interface IStructField : IField<string>
+    public interface IStructField : IField
     {
         /// <summary>
         /// A list of fields contained in this structure.
         /// </summary>
         IField[] Fields { get; }
-
-        /// <summary>
-        /// Array-style access to fields.
-        /// </summary>
-        /// <param name="identifier">Name of the field you want to look up.</param>
-        /// <returns>IField object representing the field with that identifier</returns>
-        IField this[string identifier] { get; }
 
         /// <summary>
         /// A count of the number of fields in this structure and all contained structures.

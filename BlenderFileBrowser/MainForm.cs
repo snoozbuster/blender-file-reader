@@ -133,7 +133,7 @@ namespace BlenderFileBrowser
             filterBox_LostFocus(this, null);
         }
 
-        private TreeNode loadNode(Structure[] structure)
+        private TreeNode loadNode(dynamic[] structure)
         {
             string pointerData = " (at 0x" + structure[0].ContainingBlock.OldMemoryAddress.ToString("X" + loadedFile.PointerSize * 2) + ")";
             string typeName = structure[0].TypeName;
@@ -257,7 +257,7 @@ namespace BlenderFileBrowser
         {
             try
             {
-                Structure[] structures = field.Dereference();
+                dynamic[] structures = field.Dereference();
                 pointedToValueTreeView.Enabled = true;
                 pointedToValueTreeView.Nodes.Clear();
                 pointedToValueTreeView.BeginUpdate();

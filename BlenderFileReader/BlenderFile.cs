@@ -21,7 +21,7 @@ namespace BlenderFileReader
         public string VersionNumber { get; private set; }
 
         /// <summary>
-        /// List of arrays of PopulatedStructures created from parsing a FileBlock. 
+        /// List of arrays of Structures created from parsing a FileBlock. 
         /// </summary>
         public List<Structure[]> Structures { get; private set; }
 
@@ -72,7 +72,7 @@ namespace BlenderFileReader
             // file header read; at first file block. readBlocks returns the StructureDNA.
             StructureDNA = readBlocks(reader);
 
-            // create PopulatedStructures
+            // create Structures
             memoryMap = createStructures();
             Structures = memoryMap.Values.ToList();
 
@@ -146,8 +146,8 @@ namespace BlenderFileReader
         /// when the list ends and the next begins.
         /// </summary>
         /// <param name="typeName">Name of the type you want to find.</param>
-        /// <returns>Array of all PopulatedStructures of that type.</returns>
-        public Structure[] GetStructuresOfType(string typeName)
+        /// <returns>Array of all Structures of that type.</returns>
+        public dynamic[] GetStructuresOfType(string typeName)
         {
             List<Structure> output = new List<Structure>();
             Structures.ForEach(array => {
@@ -157,12 +157,12 @@ namespace BlenderFileReader
         }
 
         /// <summary>
-        /// Gets an array of PopulatedStructures by their containing FileBlock's old memory address.
+        /// Gets an array of Structures by their containing FileBlock's old memory address.
         /// Returns null if address isn't found.
         /// </summary>
         /// <param name="address">Address to look up.</param>
         /// <returns></returns>
-        public Structure[] GetStructuresByAddress(ulong address)
+        public dynamic[] GetStructuresByAddress(ulong address)
         {
             return memoryMap.ContainsKey(address) ? memoryMap[address] : null;
         }
