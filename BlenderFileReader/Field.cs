@@ -13,10 +13,10 @@ namespace BlenderFileReader
     /// Holds field info for a primitive field.
     /// </summary>
     [DebuggerDisplay("{FullyQualifiedName}: {ToString(),nq}")] // nq means "no quotes", without it the value returned by ToString() will be quoted.
-    public class Field : DynamicObject, IField
+    public class Field<T> : IField
     {
         /// <summary>
-        /// Value contained in the field. Use this sparingly.
+        /// Value contained in the field.
         /// </summary>
         public dynamic Value { get; private set; }
 
@@ -189,13 +189,6 @@ namespace BlenderFileReader
             return output;
         }
 
-        public override bool TryConvert(ConvertBinder binder, out object result)
-        {
-            // I'm not sure if this is what I want.
-            result = binder.Type == Value.GetType() ? Value : null;
-            return result != null;
-        }
-
         /// <summary>
         /// Converts the value of the field to a string.
         /// </summary>
@@ -259,6 +252,11 @@ namespace BlenderFileReader
             }
             else
                 return Value.ToString();
+        }
+
+        public static implicit operator T(Field<T> field)
+        {
+            return (T)field.Value;
         }
     }
 }
